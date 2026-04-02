@@ -1,6 +1,13 @@
 Log:
   Level: info
 
+ExternalSecure: false
+ExternalPort: 8085
+ExternalDomain: localhost
+
+TLS:
+  Enabled: false
+
 Database:
   Postgres:
     Host: db

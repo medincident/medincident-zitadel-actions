@@ -6,6 +6,7 @@ COMPOSE_FILE="${SCRIPT_DIR}/../deployments/docker-compose.e2e.yaml"
 
 ZITADEL_URL="http://localhost:8085"
 MAX_WAIT=120  # seconds to wait for Zitadel readiness
+SUFFIX=$(date +%s)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -50,26 +51,28 @@ done
 # 3. Retrieve PAT from the machinekey volume
 # ---------------------------------------------------------------------------
 
-log "Retrieving PAT from Zitadel machinekey volume..."
+log "Retrieving PAT from Zitadel logs..."
 
-# The PAT file is written inside the zitadel container at /machinekey/.
-# Find the .pat file.
+# The Zitadel image is distroless (no ls/cat). When PatPath is not set,
+# Zitadel writes the machine key JSON and PAT to stdout during first
+# instance setup. The PAT appears on the line immediately after the
+# machine key JSON line (which contains "serviceaccount").
 PAT=""
 for attempt in $(seq 1 30); do
-  PAT_FILE=$(compose exec -T zitadel ls /machinekey/ 2>/dev/null | grep '\.pat$' | head -1 | tr -d '\r' || true)
-  if [ -n "$PAT_FILE" ]; then
-    PAT=$(compose exec -T zitadel cat "/machinekey/${PAT_FILE}" 2>/dev/null | tr -d '\r\n')
-    if [ -n "$PAT" ]; then
-      break
-    fi
+  # The PAT is the line right after the JSON machine key blob
+  PAT=$(compose logs zitadel 2>/dev/null \
+    | sed -n '/serviceaccount/{n;p;}' \
+    | head -1 \
+    | sed 's/^.*| //' \
+    | tr -d '\r\n ')
+  if [ -n "$PAT" ]; then
+    break
   fi
   sleep 2
 done
 
 if [ -z "$PAT" ]; then
-  log "No .pat file found. Listing machinekey directory:"
-  compose exec -T zitadel ls -la /machinekey/ 2>/dev/null || true
-  fail "Could not retrieve PAT from Zitadel machinekey volume."
+  fail "Could not retrieve PAT from Zitadel logs."
 fi
 
 log "PAT retrieved successfully (length: ${#PAT})."
@@ -80,11 +83,12 @@ log "PAT retrieved successfully (length: ${#PAT})."
 
 log "Creating Actions target..."
 
-TARGET_RESPONSE=$(curl -s -X POST "${ZITADEL_URL}/v2beta/targets" \
+TARGET_RESPONSE=$(curl -s -X POST \
+  "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/CreateTarget" \
   -H "Authorization: Bearer ${PAT}" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "e2e-webhook",
+    "name": "e2e-webhook-'"${SUFFIX}"'",
     "restWebhook": {
       "interruptOnError": false
     },
@@ -107,7 +111,8 @@ log "Target created: ${TARGET_ID}"
 
 log "Setting execution for user.human.added event..."
 
-EXECUTION_RESPONSE=$(curl -s -X PUT "${ZITADEL_URL}/v2beta/executions" \
+EXECUTION_RESPONSE=$(curl -s -X POST \
+  "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/SetExecution" \
   -H "Authorization: Bearer ${PAT}" \
   -H "Content-Type: application/json" \
   -d '{
@@ -116,14 +121,15 @@ EXECUTION_RESPONSE=$(curl -s -X PUT "${ZITADEL_URL}/v2beta/executions" \
         "event": "user.human.added"
       }
     },
-    "targets": [
-      {
-        "target": "'"${TARGET_ID}"'"
-      }
-    ]
+    "targets": ["'"${TARGET_ID}"'"]
   }')
 
 log "Execution response: ${EXECUTION_RESPONSE}"
+
+if echo "$EXECUTION_RESPONSE" | jq -e '.code' >/dev/null 2>&1; then
+  log "Execution creation failed: $EXECUTION_RESPONSE"
+  fail "Failed to set execution."
+fi
 
 # ---------------------------------------------------------------------------
 # 6. Create a test human user (triggers the webhook)
@@ -135,13 +141,13 @@ USER_RESPONSE=$(curl -s -X POST "${ZITADEL_URL}/v2/users/human" \
   -H "Authorization: Bearer ${PAT}" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "e2e-testuser",
+    "username": "e2e-testuser-'"${SUFFIX}"'",
     "profile": {
       "givenName": "Test",
       "familyName": "User"
     },
     "email": {
-      "email": "e2e-test@example.com",
+      "email": "e2e-test-'"${SUFFIX}"'@example.com",
       "isVerified": true
     },
     "password": {
@@ -163,24 +169,28 @@ log "Test user created: ${USER_ID}"
 # 7. Wait for the webhook to fire, then check service logs
 # ---------------------------------------------------------------------------
 
-log "Waiting for webhook delivery (10s)..."
-sleep 10
+log "Waiting for webhook delivery (polling every 2s, max 30s)..."
 
-log "Checking service logs for received event..."
-
-SERVICE_LOGS=$(compose logs service 2>/dev/null || true)
-
-if echo "$SERVICE_LOGS" | grep -q "received UserHumanAdded event"; then
-  log "================================================"
-  log "  PASS: Service received UserHumanAdded event!"
-  log "================================================"
-  exit 0
-fi
+webhook_wait=0
+while true; do
+  SERVICE_LOGS=$(compose logs service 2>/dev/null || true)
+  if echo "$SERVICE_LOGS" | grep -q "received UserHumanAdded event"; then
+    log "================================================"
+    log "  PASS: Service received UserHumanAdded event!"
+    log "================================================"
+    exit 0
+  fi
+  if [ "$webhook_wait" -ge 30 ]; then
+    break
+  fi
+  sleep 2
+  webhook_wait=$((webhook_wait + 2))
+done
 
 # Show service logs for debugging
 log "Service logs:"
 echo "$SERVICE_LOGS"
 log "================================================"
-log "  FAIL: Expected log line not found."
+log "  FAIL: Expected log line not found within 30s."
 log "================================================"
 exit 1

@@ -1,3 +1,5 @@
+name: medincident-zitadel-actions-e2e
+
 services:
   db:
     image: postgres:16-alpine
@@ -14,10 +16,11 @@ services:
       - /var/lib/postgresql/data
 
   zitadel:
-    image: ghcr.io/zitadel/zitadel:latest
+    # Pin version for E2E reproducibility (v4+ needed for Actions v2 API)
+    image: ghcr.io/zitadel/zitadel:v4.13.1
     command: >-
       start-from-init
-      --masterkey "MasterkeyNeedsToHave32Chars!!"
+      --masterkey "MasterkeyMustBeExact32CharsXXXXX"
       --tlsMode disabled
       --config /zitadel-config.yaml
       --steps /zitadel-steps.yaml
@@ -28,7 +31,6 @@ services:
     volumes:
       - ./zitadel/config.yaml:/zitadel-config.yaml:ro
       - ./zitadel/steps.yaml:/zitadel-steps.yaml:ro
-      - zitadel-machinekey:/machinekey
     ports:
       - "8085:8080"
     depends_on:
@@ -44,7 +46,7 @@ services:
   service:
     build:
       context: ../
-      dockerfile: Dockerfile
+      dockerfile: build/package/Dockerfile
     command: ["server", "-config", "/etc/service/config.yaml"]
     volumes:
       - ../configs/config.e2e.yaml:/etc/service/config.yaml:ro
@@ -53,6 +55,9 @@ services:
     depends_on:
       zitadel:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
 
-volumes:
-  zitadel-machinekey:

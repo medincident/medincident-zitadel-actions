@@ -72,6 +72,11 @@ func New(opts ...Option) (*fiber.App, error) {
 		}))
 	}
 
+	// Health-check endpoint used by Docker/orchestrators.
+	app.Get("/", func(c fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
 	events.SetupRoutes(app, cfg.logger)
 
 	return app, nil

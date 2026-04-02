@@ -30,12 +30,12 @@ type Envelope struct {
 	EventType     string    `json:"event_type"`
 	CreatedAt     time.Time `json:"created_at"`
 	UserID        string    `json:"userID"`
-	// EventPayload holds the base64-encoded JSON body of the event.
+	// EventPayload holds the raw JSON body of the event.
 	// Use Unmarshal to decode it into a typed struct.
-	EventPayload []byte `json:"event_payload"`
+	EventPayload json.RawMessage `json:"event_payload"`
 }
 
-// Unmarshal decodes the base64-encoded JSON EventPayload into output.
+// Unmarshal decodes the JSON EventPayload into output.
 func Unmarshal[T any](envelope *Envelope, output *T) error {
 	return json.Unmarshal(envelope.EventPayload, output)
 }
