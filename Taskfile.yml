@@ -1,0 +1,21 @@
+version: "3"
+
+tasks:
+  generate:
+    desc: Generate protobuf and Go enum code
+    cmds:
+      - go tool buf generate
+      - go generate {{.ROOT_DIR}}/...
+    dir: api/proto
+
+  fmt:
+    desc: Format protobuf definitions
+    cmds:
+      - go tool buf format -w
+    dir: api/proto
+
+  lint:
+    desc: Lint protobuf definitions
+    cmds:
+      - go tool buf lint
+    dir: api/proto

@@ -1,0 +1,90 @@
+zerolog:
+  # Global minimum log level.
+  # Accepted values: trace | debug | info | warn | error | fatal | panic
+  # Supports env var injection: level: ${LOG_LEVEL}
+  level: info
+
+  # Append file:line caller information to every log entry.
+  caller: false
+
+  # Number of extra stack frames to skip when reporting caller location.
+  # Useful when the logger is wrapped in a helper layer.
+  # Only effective when caller: true.
+  caller_skip: 0
+
+  # Include an automatic timestamp field in every log entry.
+  # Set to false to disable (e.g. when the log collector adds its own timestamp).
+  timestamp: true
+
+  # Timestamp format. Any Go time layout string is accepted.
+  # Default: 2006-01-02T15:04:05Z07:00 (RFC 3339)
+  time_format: "2006-01-02T15:04:05Z07:00"
+
+  # Force all timestamps to UTC regardless of the system timezone.
+  time_utc: false
+
+  # Static string fields added to every log entry.
+  # Useful for tagging logs with service identity.
+  fields:
+    service: medincident-zitadel-actions
+    env: ${APP_ENV}
+
+  outputs:
+    # ── Console output (stdout) ───────────────────────────────────────────────
+    - type: console
+
+      # Which standard stream to write to.
+      # Accepted values: stdout | stderr  (default: stderr)
+      target: stdout
+
+      # Minimum level for this output. Entries below this level are dropped
+      # for this output only, regardless of the global level above.
+      level: debug
+
+      # Human-readable (ConsoleWriter) formatting.
+      # Defaults to true for console outputs; set to false for JSON.
+      pretty: true
+
+      # Disable ANSI color codes. Useful in CI or when piping output.
+      no_color: false
+
+      # Timestamp format used in pretty mode.
+      # Overrides the global time_format for this output only.
+      time_format: "15:04:05"
+
+      # Display order of fields in pretty mode.
+      # Uses zerolog field name constants.
+      parts_order:
+        - time
+        - level
+        - caller
+        - message
+
+      # Fields to hide from pretty mode output.
+      # For example, hide "caller" if caller: false above.
+      parts_exclude: []
+
+    # ── Console output (stderr) ───────────────────────────────────────────────
+    - type: console
+      target: stderr
+      level: warn
+      pretty: true
+      no_color: true
+
+    # ── File output ───────────────────────────────────────────────────────────
+    - type: file
+
+      # Path to the log file.
+      # The file is created if absent and appended to if it already exists.
+      # Supports env var injection: path: ${LOG_FILE_PATH}
+      path: /var/log/medincident-zitadel-actions/app.log
+
+      # Minimum level for this output.
+      level: warn
+
+      # JSON formatting is the default for file outputs.
+      # Set to true to write pretty (human-readable) lines to the file instead.
+      pretty: false
+
+      # Timestamp format for this file output.
+      time_format: "2006-01-02T15:04:05Z07:00"
