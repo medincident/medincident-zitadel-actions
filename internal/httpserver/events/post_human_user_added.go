@@ -26,9 +26,15 @@ func makePostHumanUserAddedHandler(logger *zerolog.Logger) fiber.Handler {
 		logger.Info().
 			Str("user_id", envelope.AggregateID).
 			Str("event_type", envelope.EventType).
+			Str("user_name", userData.UserName).
 			Str("first_name", userData.FirstName).
 			Str("last_name", userData.LastName).
+			Str("nick_name", userData.NickName).
+			Str("display_name", userData.DisplayName).
+			Str("preferred_language", userData.PreferredLanguage).
+			Int("gender", userData.Gender).
 			Str("email", userData.Email).
+			Str("phone", userData.Phone).
 			Msg("received UserHumanAdded event")
 
 		return c.SendStatus(fiber.StatusOK)

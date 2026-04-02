@@ -77,7 +77,7 @@ func New(opts ...Option) (*fiber.App, error) {
 		return c.SendStatus(fiber.StatusOK)
 	})
 
-	events.SetupRoutes(app, cfg.logger)
+	events.SetupRoutes(app.Group(""), cfg.logger)
 
 	return app, nil
 }

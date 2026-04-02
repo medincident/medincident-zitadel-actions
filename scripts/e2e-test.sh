@@ -166,31 +166,123 @@ fi
 log "Test user created: ${USER_ID}"
 
 # ---------------------------------------------------------------------------
-# 7. Wait for the webhook to fire, then check service logs
+# 7. Wait for the user.human.added webhook to fire
 # ---------------------------------------------------------------------------
 
-log "Waiting for webhook delivery (polling every 2s, max 30s)..."
+log "Waiting for UserHumanAdded webhook delivery (polling every 2s, max 30s)..."
 
 webhook_wait=0
 while true; do
   SERVICE_LOGS=$(compose logs service 2>/dev/null || true)
   if echo "$SERVICE_LOGS" | grep -q "received UserHumanAdded event"; then
-    log "================================================"
-    log "  PASS: Service received UserHumanAdded event!"
-    log "================================================"
-    exit 0
+    log "PASS: Service received UserHumanAdded event."
+    break
   fi
   if [ "$webhook_wait" -ge 30 ]; then
-    break
+    log "Service logs:"
+    echo "$SERVICE_LOGS"
+    fail "UserHumanAdded log line not found within 30s."
   fi
   sleep 2
   webhook_wait=$((webhook_wait + 2))
 done
 
-# Show service logs for debugging
-log "Service logs:"
-echo "$SERVICE_LOGS"
+# ---------------------------------------------------------------------------
+# 8. Create an Actions target + execution for user.human.profile.changed
+# ---------------------------------------------------------------------------
+
+log "Creating Actions target for profile changed..."
+
+PROFILE_TARGET_RESPONSE=$(curl -s -X POST \
+  "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/CreateTarget" \
+  -H "Authorization: Bearer ${PAT}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "e2e-webhook-profile-'"${SUFFIX}"'",
+    "restWebhook": {
+      "interruptOnError": false
+    },
+    "endpoint": "http://service:8080/user/human/profile/changed",
+    "timeout": "10s"
+  }')
+
+PROFILE_TARGET_ID=$(echo "$PROFILE_TARGET_RESPONSE" | jq -r '.id // .details.id // empty' 2>/dev/null || true)
+
+if [ -z "$PROFILE_TARGET_ID" ]; then
+  log "Profile target creation response: $PROFILE_TARGET_RESPONSE"
+  fail "Failed to create profile Actions target — no target ID in response."
+fi
+
+log "Profile target created: ${PROFILE_TARGET_ID}"
+
+log "Setting execution for user.human.profile.changed event..."
+
+PROFILE_EXEC_RESPONSE=$(curl -s -X POST \
+  "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/SetExecution" \
+  -H "Authorization: Bearer ${PAT}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "condition": {
+      "event": {
+        "event": "user.human.profile.changed"
+      }
+    },
+    "targets": ["'"${PROFILE_TARGET_ID}"'"]
+  }')
+
+log "Profile execution response: ${PROFILE_EXEC_RESPONSE}"
+
+if echo "$PROFILE_EXEC_RESPONSE" | jq -e '.code' >/dev/null 2>&1; then
+  log "Profile execution creation failed: $PROFILE_EXEC_RESPONSE"
+  fail "Failed to set profile execution."
+fi
+
+# ---------------------------------------------------------------------------
+# 9. Update the test user's profile (triggers user.human.profile.changed)
+# ---------------------------------------------------------------------------
+
+log "Updating test user profile..."
+
+UPDATE_RESPONSE=$(curl -s -X PUT \
+  "${ZITADEL_URL}/v2/users/${USER_ID}" \
+  -H "Authorization: Bearer ${PAT}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "profile": {
+      "givenName": "Updated",
+      "familyName": "Profile"
+    }
+  }')
+
+log "Profile update response: ${UPDATE_RESPONSE}"
+
+# ---------------------------------------------------------------------------
+# 10. Wait for the user.human.profile.changed webhook to fire
+# ---------------------------------------------------------------------------
+
+log "Waiting for UserHumanProfileChanged webhook delivery (polling every 2s, max 30s)..."
+
+webhook_wait=0
+while true; do
+  SERVICE_LOGS=$(compose logs service 2>/dev/null || true)
+  if echo "$SERVICE_LOGS" | grep -q "received UserHumanProfileChanged event"; then
+    log "PASS: Service received UserHumanProfileChanged event."
+    break
+  fi
+  if [ "$webhook_wait" -ge 30 ]; then
+    log "Service logs:"
+    echo "$SERVICE_LOGS"
+    fail "UserHumanProfileChanged log line not found within 30s."
+  fi
+  sleep 2
+  webhook_wait=$((webhook_wait + 2))
+done
+
+# ---------------------------------------------------------------------------
+# Final result
+# ---------------------------------------------------------------------------
+
 log "================================================"
-log "  FAIL: Expected log line not found within 30s."
+log "  PASS: All E2E tests passed!"
 log "================================================"
-exit 1
+exit 0
