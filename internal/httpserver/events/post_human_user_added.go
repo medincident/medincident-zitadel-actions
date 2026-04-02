@@ -3,6 +3,7 @@ package events
 import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
+	"github.com/samber/oops"
 
 	zitadelevents "github.com/medincident/medincident-zitadel-actions/internal/zitadel/actions/events"
 )
@@ -13,14 +14,16 @@ func makePostHumanUserAddedHandler(logger *zerolog.Logger) fiber.Handler {
 			return fiber.ErrUnprocessableEntity
 		}
 
+		eb := oops.In("events").Code("user_human_added")
+
 		envelope := new(zitadelevents.Envelope)
 		if err := c.Bind().Body(envelope); err != nil {
-			return err
+			return eb.Wrap(err)
 		}
 
 		userData := new(zitadelevents.UserHumanAdded)
 		if err := zitadelevents.Unmarshal(envelope, userData); err != nil {
-			return err
+			return eb.Wrap(err)
 		}
 
 		logger.Info().

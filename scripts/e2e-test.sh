@@ -243,11 +243,12 @@ fi
 
 log "Updating test user profile..."
 
-UPDATE_RESPONSE=$(curl -s -X PUT \
-  "${ZITADEL_URL}/v2/users/${USER_ID}" \
+UPDATE_RESPONSE=$(curl -s -X POST \
+  "${ZITADEL_URL}/zitadel.user.v2.UserService/UpdateHumanUser" \
   -H "Authorization: Bearer ${PAT}" \
   -H "Content-Type: application/json" \
   -d '{
+    "userId": "'"${USER_ID}"'",
     "profile": {
       "givenName": "Updated",
       "familyName": "Profile"
@@ -255,6 +256,10 @@ UPDATE_RESPONSE=$(curl -s -X PUT \
   }')
 
 log "Profile update response: ${UPDATE_RESPONSE}"
+
+if echo "$UPDATE_RESPONSE" | jq -e '.code' >/dev/null 2>&1; then
+  fail "Profile update failed: $UPDATE_RESPONSE"
+fi
 
 # ---------------------------------------------------------------------------
 # 10. Wait for the user.human.profile.changed webhook to fire

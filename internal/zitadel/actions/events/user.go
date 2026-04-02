@@ -12,6 +12,7 @@ type UserHumanAdded struct {
 	Gender            int    `json:"gender"`
 	Email             string `json:"email"`
 	Phone             string `json:"phone"`
+	EncodedHash       string `json:"encodedHash"`
 }
 
 // UserHumanProfileChanged is the payload of the user.human.profile.changed Zitadel event.
