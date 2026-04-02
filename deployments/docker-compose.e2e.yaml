@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: zitadel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zitadel"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:latest
+    command: >-
+      start-from-init
+      --masterkey "MasterkeyNeedsToHave32Chars!!"
+      --tlsMode disabled
+      --config /zitadel-config.yaml
+      --steps /zitadel-steps.yaml
+    environment:
+      ZITADEL_EXTERNALSECURE: "false"
+      ZITADEL_EXTERNALPORT: 8085
+      ZITADEL_EXTERNALDOMAIN: localhost
+    volumes:
+      - ./zitadel/config.yaml:/zitadel-config.yaml:ro
+      - ./zitadel/steps.yaml:/zitadel-steps.yaml:ro
+      - zitadel-machinekey:/machinekey
+    ports:
+      - "8085:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/app/zitadel", "ready", "--config", "/zitadel-config.yaml"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+
+  service:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    command: ["server", "-config", "/etc/service/config.yaml"]
+    volumes:
+      - ../configs/config.e2e.yaml:/etc/service/config.yaml:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      zitadel:
+        condition: service_healthy
+
+volumes:
+  zitadel-machinekey:

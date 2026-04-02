@@ -1,0 +1,19 @@
+FirstInstance:
+  InstanceName: E2E
+  DefaultLanguage: en
+  Org:
+    Name: E2E
+    Human:
+      UserName: zitadel-admin
+      FirstName: Admin
+      LastName: User
+      Password: "Password1!"
+    Machine:
+      Machine:
+        Username: e2e-sa
+        Name: E2E Service Account
+      MachineKey:
+        Type: 1
+        ExpirationDate: "2030-01-01T00:00:00Z"
+      Pat:
+        ExpirationDate: "2030-01-01T00:00:00Z"

@@ -31,5 +31,8 @@ go.work.sum
 # .idea/
 # .vscode/
 
+# Build output
+/server
+
 .claude/settings.local.json
 drafts/
