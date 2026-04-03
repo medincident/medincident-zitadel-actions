@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+
+  - repo: local
+    hooks:
+      - id: task-fmt-check
+        name: buf format check
+        entry: task
+        args: [fmt:check]
+        language: system
+        files: '\.proto$'
+        pass_filenames: false
+
+      - id: task-lint
+        name: lint (proto + Go)
+        entry: task
+        args: [lint]
+        language: system
+        pass_filenames: false
+
+      - id: task-test
+        name: unit tests
+        entry: task
+        args: [test:unit]
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: task-vuln
+        name: vulnerability check
+        entry: task
+        args: [vuln]
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

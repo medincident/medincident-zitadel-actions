@@ -13,10 +13,10 @@ import (
 func NewContainer(cfg *config.Config) do.Injector {
 	injector := do.New()
 
-	do.Provide(injector, func(i do.Injector) (*config.Config, error) {
+	do.Provide(injector, func(_ do.Injector) (*config.Config, error) {
 		return cfg, nil
 	})
-	do.Provide(injector, func(i do.Injector) (*config.ZerologConfig, error) {
+	do.Provide(injector, func(_ do.Injector) (*config.ZerologConfig, error) {
 		return &cfg.Zerolog, nil
 	})
 	do.Provide(injector, ProvideZerolog)

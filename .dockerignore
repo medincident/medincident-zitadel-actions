@@ -1,20 +1,35 @@
+# VCS & CI
 .git
 .gitignore
 .github
+.pre-commit-config.yaml
+
+# IDE & tooling
 .claude
 .agents
+.editorconfig
+skills-lock.json
 drafts
 
+# Documentation
 *.md
 
+# Build artifacts
+dist/
+
+# Test artifacts
 *.test
 *.out
 coverage.*
 *.coverprofile
 profile.cov
+test/
 
+# Config & secrets
 .env
 configs/config.yaml
 
-deployments
-scripts
+# Docker
+build/
+Dockerfile
+.dockerignore
