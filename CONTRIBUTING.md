@@ -20,7 +20,7 @@ pre-commit install --hook-type pre-commit --hook-type pre-push
 2. Restore Claude Code skills from the lock file:
 
 ```bash
-npx skills
+npx skills experimental_install
 ```
 
 3. Verify everything works:
