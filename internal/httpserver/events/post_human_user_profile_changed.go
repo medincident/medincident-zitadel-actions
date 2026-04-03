@@ -14,27 +14,20 @@ func makePostHumanUserProfileChangedHandler(logger *zerolog.Logger) fiber.Handle
 			return fiber.ErrUnprocessableEntity
 		}
 
-		eb := oops.In("events").Code("user_human_profile_changed")
-
-		envelope := new(zitadelevents.Envelope)
+		envelope := new(zitadelevents.Envelope[zitadelevents.UserHumanProfileChanged])
 		if err := c.Bind().Body(envelope); err != nil {
-			return eb.Wrap(err)
-		}
-
-		profileData := new(zitadelevents.UserHumanProfileChanged)
-		if err := zitadelevents.Unmarshal(envelope, profileData); err != nil {
-			return eb.Wrap(err)
+			return oops.In("events").Code("user_human_profile_changed").Wrap(err)
 		}
 
 		logger.Info().
 			Str("user_id", envelope.AggregateID).
 			Str("event_type", envelope.EventType).
-			Str("first_name", profileData.FirstName).
-			Str("last_name", profileData.LastName).
-			Str("nick_name", profileData.NickName).
-			Str("display_name", profileData.DisplayName).
-			Str("preferred_language", profileData.PreferredLanguage).
-			Int("gender", profileData.Gender).
+			Str("first_name", envelope.EventPayload.FirstName).
+			Str("last_name", envelope.EventPayload.LastName).
+			Str("nick_name", envelope.EventPayload.NickName).
+			Str("display_name", envelope.EventPayload.DisplayName).
+			Str("preferred_language", envelope.EventPayload.PreferredLanguage).
+			Int("gender", envelope.EventPayload.Gender).
 			Msg("received UserHumanProfileChanged event")
 
 		return c.SendStatus(fiber.StatusOK)

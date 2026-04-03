@@ -14,30 +14,23 @@ func makePostHumanUserAddedHandler(logger *zerolog.Logger) fiber.Handler {
 			return fiber.ErrUnprocessableEntity
 		}
 
-		eb := oops.In("events").Code("user_human_added")
-
-		envelope := new(zitadelevents.Envelope)
+		envelope := new(zitadelevents.Envelope[zitadelevents.UserHumanAdded])
 		if err := c.Bind().Body(envelope); err != nil {
-			return eb.Wrap(err)
-		}
-
-		userData := new(zitadelevents.UserHumanAdded)
-		if err := zitadelevents.Unmarshal(envelope, userData); err != nil {
-			return eb.Wrap(err)
+			return oops.In("events").Code("user_human_added").Wrap(err)
 		}
 
 		logger.Info().
 			Str("user_id", envelope.AggregateID).
 			Str("event_type", envelope.EventType).
-			Str("user_name", userData.UserName).
-			Str("first_name", userData.FirstName).
-			Str("last_name", userData.LastName).
-			Str("nick_name", userData.NickName).
-			Str("display_name", userData.DisplayName).
-			Str("preferred_language", userData.PreferredLanguage).
-			Int("gender", userData.Gender).
-			Str("email", userData.Email).
-			Str("phone", userData.Phone).
+			Str("user_name", envelope.EventPayload.UserName).
+			Str("first_name", envelope.EventPayload.FirstName).
+			Str("last_name", envelope.EventPayload.LastName).
+			Str("nick_name", envelope.EventPayload.NickName).
+			Str("display_name", envelope.EventPayload.DisplayName).
+			Str("preferred_language", envelope.EventPayload.PreferredLanguage).
+			Int("gender", envelope.EventPayload.Gender).
+			Str("email", envelope.EventPayload.Email).
+			Str("phone", envelope.EventPayload.Phone).
 			Msg("received UserHumanAdded event")
 
 		return c.SendStatus(fiber.StatusOK)
