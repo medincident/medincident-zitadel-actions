@@ -17,7 +17,13 @@ cd medincident-zitadel-actions
 pre-commit install --hook-type pre-commit --hook-type pre-push
 ```
 
-2. Verify everything works:
+2. Restore Claude Code skills from the lock file:
+
+```bash
+npx skills
+```
+
+3. Verify everything works:
 
 ```bash
 task test
