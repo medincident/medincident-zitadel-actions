@@ -15,7 +15,7 @@ internal/
   httpserver/                               — fiber.App factory + route registration
   httpserver/events/                        — HTTP handlers for Zitadel webhook events
   log/                                      — zerolog builder (multi-output, per-output level filter)
-  zitadel/actions/events/                   — Envelope, Unmarshal[T], event payload structs
+  zitadel/actions/events/                   — Envelope[T], event payload structs
 api/proto/                                  — buf.yaml, buf.gen.yaml; .proto files go here
 pkg/                                        — buf-generated Go code (import from here)
 configs/config.example.yaml                — annotated config reference
@@ -119,15 +119,15 @@ logger.Info().Str("user_id", id).Str("event_type", t).Msg("received event")
 
 ## Zitadel event envelope
 
-Every Zitadel Actions v2 POST body deserialises into `zitadel/actions/events.Envelope`.
-The `event_payload` field is base64-encoded JSON — use the generic `Unmarshal[T]` to decode it:
+Every Zitadel Actions v2 POST body deserialises into the generic `zitadel/actions/events.Envelope[T]`.
+The `event_payload` field is a JSON object that is directly unmarshaled into `T`:
 
 ```go
-envelope := new(events.Envelope)
+envelope := new(events.Envelope[events.UserHumanAdded])
 c.Bind().Body(envelope)
 
-payload := new(events.UserHumanAdded)
-events.Unmarshal(envelope, payload)
+// Access the typed payload directly:
+envelope.EventPayload.Username
 ```
 
 ---
@@ -147,6 +147,6 @@ After editing `.proto` files run `task generate`.
 - Webhook HMAC signature verification middleware
 - Rate limiting middleware
 - Handlers for `/user/profile`, `/user/email`, `/user/idp`
-- Tests (unit: `Envelope.Unmarshal`; integration: handlers)
+- Tests (unit: `Envelope[T]` binding; integration: handlers)
 - Makefile (`build` / `run` targets)
 - TLS termination strategy
