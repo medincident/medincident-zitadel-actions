@@ -126,13 +126,15 @@ logger.Info().Str("user_id", id).Str("event_type", t).Msg("received event")
 
 ## Zitadel event envelope
 
-Every Zitadel Actions v2 POST body deserialises into `zitadel/actions/events.Envelope[T]`.
-`Envelope` is generic — bind directly into the typed envelope:
+Every Zitadel Actions v2 POST body deserialises into the generic `zitadel/actions/events.Envelope[T]`.
+The `event_payload` field is a JSON object that is directly unmarshaled into `T`:
 
 ```go
 envelope := new(events.Envelope[events.UserHumanAdded])
 c.Bind().Body(envelope)
-// envelope.EventPayload.FirstName, etc.
+
+// Access the typed payload directly:
+envelope.EventPayload.FirstName
 ```
 
 ---
