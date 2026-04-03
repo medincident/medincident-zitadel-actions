@@ -32,6 +32,7 @@ go.work.sum
 # .vscode/
 
 # Build output
+/dist/
 /server
 
 .claude/settings.local.json
