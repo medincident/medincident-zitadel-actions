@@ -58,7 +58,8 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 		opts = append(opts, applog.WithStr(key, value))
 	}
 
-	for idx, out := range cfg.Outputs {
+	for idx := range cfg.Outputs {
+		out := &cfg.Outputs[idx]
 		outputOpts, err := buildOutputOptions(out)
 		if err != nil {
 			return nil, nil, eb.With("output_index", idx).Wrap(err)
@@ -88,7 +89,7 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 	return applog.New(opts...)
 }
 
-func buildOutputOptions(out config.ZerologOutputConfig) ([]applog.OutputOption, error) {
+func buildOutputOptions(out *config.ZerologOutputConfig) ([]applog.OutputOption, error) {
 	eb := oops.In("do/zerolog")
 
 	var opts []applog.OutputOption
