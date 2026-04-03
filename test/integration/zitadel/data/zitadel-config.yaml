@@ -1,8 +1,10 @@
 Log:
   Level: info
 
+Port: 8080
+
 ExternalSecure: false
-ExternalPort: 8085
+ExternalPort: 8080
 ExternalDomain: localhost
 
 TLS:

@@ -19,3 +19,8 @@ tasks:
     cmds:
       - go tool buf lint
     dir: api/proto
+
+  test:integration:
+    desc: Run integration tests (requires Docker)
+    cmds:
+      - go test -tags=integration -count=1 -timeout=10m -v ./test/integration/zitadel/
