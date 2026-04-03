@@ -41,7 +41,8 @@ The following hooks are configured:
 
 **On commit:**
 - **Whitespace & formatting** — trailing whitespace, end-of-file fixer, YAML validation, large files, merge conflicts
-- **Protobuf** — `task fmt:check`, `task lint` (only when `.proto` files change)
+- **Protobuf formatting** — `task fmt:check` (only when `.proto` files change)
+- **Lint** — `task lint` (protobuf + Go)
 
 **On push:**
 - **Unit tests** — `task test:unit`
@@ -53,7 +54,9 @@ The following hooks are configured:
 task generate          # Generate protobuf and Go enum code
 task fmt               # Format protobuf definitions
 task fmt:check         # Dry-run format check (no files modified)
-task lint              # Lint protobuf definitions
+task lint              # Lint protobuf and Go code
+task lint:proto        # Lint protobuf only
+task lint:go           # Lint Go code only
 task vuln              # Run Go vulnerability check
 task test:unit         # Run unit tests
 task test:integration  # Run integration tests (requires Docker)

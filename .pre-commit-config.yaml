@@ -19,11 +19,10 @@ repos:
         pass_filenames: false
 
       - id: task-lint
-        name: buf lint
+        name: lint (proto + Go)
         entry: task
         args: [lint]
         language: system
-        files: '\.proto$'
         pass_filenames: false
 
       - id: task-test
