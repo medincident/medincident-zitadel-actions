@@ -8,6 +8,8 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/httpserver/events"
+	"github.com/medincident/medincident-zitadel-actions/internal/httpserver/requests"
+	"github.com/medincident/medincident-zitadel-actions/internal/httpserver/responses"
 )
 
 type serverConfig struct {
@@ -72,7 +74,14 @@ func New(opts ...Option) (*fiber.App, error) {
 		}))
 	}
 
+	// Health-check endpoint used by Docker/orchestrators.
+	app.Get("/", func(c fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
 	events.SetupRoutes(app, cfg.logger)
+	requests.SetupRoutes(app, cfg.logger)
+	responses.SetupRoutes(app, cfg.logger)
 
 	return app, nil
 }

@@ -1,0 +1,29 @@
+Log:
+  Level: info
+
+ExternalSecure: false
+ExternalPort: 8085
+ExternalDomain: localhost
+
+TLS:
+  Enabled: false
+
+Database:
+  Postgres:
+    Host: db
+    Port: 5432
+    Database: zitadel
+    MaxOpenConns: 20
+    MaxIdleConns: 10
+    MaxConnLifetime: 30m
+    MaxConnIdleTime: 5m
+    User:
+      Username: zitadel
+      Password: zitadel
+      SSL:
+        Mode: disable
+    Admin:
+      Username: postgres
+      Password: postgres
+      SSL:
+        Mode: disable
