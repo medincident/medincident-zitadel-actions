@@ -8,6 +8,8 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/httpserver/events"
+	"github.com/medincident/medincident-zitadel-actions/internal/httpserver/requests"
+	"github.com/medincident/medincident-zitadel-actions/internal/httpserver/responses"
 )
 
 type serverConfig struct {
@@ -77,7 +79,9 @@ func New(opts ...Option) (*fiber.App, error) {
 		return c.SendStatus(fiber.StatusOK)
 	})
 
-	events.SetupRoutes(app.Group(""), cfg.logger)
+	events.SetupRoutes(app, cfg.logger)
+	requests.SetupRoutes(app, cfg.logger)
+	responses.SetupRoutes(app, cfg.logger)
 
 	return app, nil
 }

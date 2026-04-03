@@ -78,61 +78,102 @@ fi
 log "PAT retrieved successfully (length: ${#PAT})."
 
 # ---------------------------------------------------------------------------
-# 4. Create an Actions v2 Target pointing to our service
+# Helper: create_target NAME ENDPOINT → prints target ID
 # ---------------------------------------------------------------------------
 
-log "Creating Actions target..."
-
-TARGET_RESPONSE=$(curl -s -X POST \
-  "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/CreateTarget" \
-  -H "Authorization: Bearer ${PAT}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "e2e-webhook-'"${SUFFIX}"'",
-    "restWebhook": {
-      "interruptOnError": false
-    },
-    "endpoint": "http://service:8080/user/human/added",
-    "timeout": "10s"
-  }')
-
-TARGET_ID=$(echo "$TARGET_RESPONSE" | jq -r '.id // .details.id // empty' 2>/dev/null || true)
-
-if [ -z "$TARGET_ID" ]; then
-  log "Target creation response: $TARGET_RESPONSE"
-  fail "Failed to create Actions target — no target ID in response."
-fi
-
-log "Target created: ${TARGET_ID}"
+create_target() {
+  local name="$1" endpoint="$2"
+  local body
+  body=$(printf '{"name":"%s-%s","restWebhook":{"interruptOnError":false},"endpoint":"%s","timeout":"10s"}' "$name" "$SUFFIX" "$endpoint")
+  local resp
+  resp=$(curl -s -X POST \
+    "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/CreateTarget" \
+    -H "Authorization: Bearer ${PAT}" \
+    -H "Content-Type: application/json" \
+    -d "$body")
+  local tid
+  tid=$(echo "$resp" | jq -r '.id // .details.id // empty' 2>/dev/null || true)
+  if [ -z "$tid" ]; then
+    log "Target creation response: $resp" >&2
+    fail "Failed to create target '${name}'."
+  fi
+  log "Target '${name}' created: ${tid}" >&2
+  echo "$tid"
+}
 
 # ---------------------------------------------------------------------------
-# 5. Create an Execution that maps user.human.added to the target
+# Helper: set_execution CONDITION_JSON TARGET_ID
 # ---------------------------------------------------------------------------
 
-log "Setting execution for user.human.added event..."
-
-EXECUTION_RESPONSE=$(curl -s -X POST \
-  "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/SetExecution" \
-  -H "Authorization: Bearer ${PAT}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "condition": {
-      "event": {
-        "event": "user.human.added"
-      }
-    },
-    "targets": ["'"${TARGET_ID}"'"]
-  }')
-
-log "Execution response: ${EXECUTION_RESPONSE}"
-
-if echo "$EXECUTION_RESPONSE" | jq -e '.code' >/dev/null 2>&1; then
-  log "Execution creation failed: $EXECUTION_RESPONSE"
-  fail "Failed to set execution."
-fi
+set_execution() {
+  local condition="$1" target_id="$2"
+  local body
+  body=$(printf '{"condition":%s,"targets":["%s"]}' "$condition" "$target_id")
+  local resp
+  resp=$(curl -s -X POST \
+    "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/SetExecution" \
+    -H "Authorization: Bearer ${PAT}" \
+    -H "Content-Type: application/json" \
+    -d "$body")
+  log "Execution response: ${resp}"
+  if echo "$resp" | jq -e '.code' >/dev/null 2>&1; then
+    fail "Failed to set execution: $resp"
+  fi
+}
 
 # ---------------------------------------------------------------------------
-# 6. Create a test human user (triggers the webhook)
+# Helper: wait_for_log PATTERN LABEL
+# ---------------------------------------------------------------------------
+
+wait_for_log() {
+  local pattern="$1" label="$2"
+  log "Waiting for ${label} (polling every 2s, max 30s)..."
+  local elapsed=0
+  while true; do
+    SERVICE_LOGS=$(compose logs service 2>/dev/null || true)
+    if echo "$SERVICE_LOGS" | grep -q "$pattern"; then
+      log "PASS: ${label}"
+      return 0
+    fi
+    if [ "$elapsed" -ge 30 ]; then
+      log "Service logs:"
+      echo "$SERVICE_LOGS"
+      fail "${label} — log line not found within 30s."
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+  done
+}
+
+# ---------------------------------------------------------------------------
+# 4. Create targets for all endpoints
+# ---------------------------------------------------------------------------
+
+ADDED_TID=$(create_target "e2e-added"           "http://service:8080/user/human/added")
+PROFILE_TID=$(create_target "e2e-profile"        "http://service:8080/user/human/profile/changed")
+EVENT_TID=$(create_target "e2e-any-event"        "http://service:8080/event")
+REQUEST_TID=$(create_target "e2e-any-request"    "http://service:8080/request")
+RESPONSE_TID=$(create_target "e2e-any-response"  "http://service:8080/response")
+
+# ---------------------------------------------------------------------------
+# 5. Create executions
+# ---------------------------------------------------------------------------
+
+# Event executions — specific event types
+set_execution '{"event":{"event":"user.human.added"}}'           "$ADDED_TID"
+set_execution '{"event":{"event":"user.human.profile.changed"}}' "$PROFILE_TID"
+
+# Catch-all event execution (all events)
+set_execution '{"event":{"all":true}}'  "$EVENT_TID"
+
+# Request execution — fires before any API request is processed
+set_execution '{"request":{"all":true}}' "$REQUEST_TID"
+
+# Response execution — fires after any API response is sent
+set_execution '{"response":{"all":true}}' "$RESPONSE_TID"
+
+# ---------------------------------------------------------------------------
+# 6. Create a test human user (triggers event + request/response hooks)
 # ---------------------------------------------------------------------------
 
 log "Creating test human user..."
@@ -166,79 +207,31 @@ fi
 log "Test user created: ${USER_ID}"
 
 # ---------------------------------------------------------------------------
-# 7. Wait for the user.human.added webhook to fire
+# 7. Verify typed event handler
 # ---------------------------------------------------------------------------
 
-log "Waiting for UserHumanAdded webhook delivery (polling every 2s, max 30s)..."
-
-webhook_wait=0
-while true; do
-  SERVICE_LOGS=$(compose logs service 2>/dev/null || true)
-  if echo "$SERVICE_LOGS" | grep -q "received UserHumanAdded event"; then
-    log "PASS: Service received UserHumanAdded event."
-    break
-  fi
-  if [ "$webhook_wait" -ge 30 ]; then
-    log "Service logs:"
-    echo "$SERVICE_LOGS"
-    fail "UserHumanAdded log line not found within 30s."
-  fi
-  sleep 2
-  webhook_wait=$((webhook_wait + 2))
-done
+wait_for_log "received UserHumanAdded event"  "Service received UserHumanAdded event"
 
 # ---------------------------------------------------------------------------
-# 8. Create an Actions target + execution for user.human.profile.changed
+# 8. Verify catch-all event handler
 # ---------------------------------------------------------------------------
 
-log "Creating Actions target for profile changed..."
-
-PROFILE_TARGET_RESPONSE=$(curl -s -X POST \
-  "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/CreateTarget" \
-  -H "Authorization: Bearer ${PAT}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "e2e-webhook-profile-'"${SUFFIX}"'",
-    "restWebhook": {
-      "interruptOnError": false
-    },
-    "endpoint": "http://service:8080/user/human/profile/changed",
-    "timeout": "10s"
-  }')
-
-PROFILE_TARGET_ID=$(echo "$PROFILE_TARGET_RESPONSE" | jq -r '.id // .details.id // empty' 2>/dev/null || true)
-
-if [ -z "$PROFILE_TARGET_ID" ]; then
-  log "Profile target creation response: $PROFILE_TARGET_RESPONSE"
-  fail "Failed to create profile Actions target — no target ID in response."
-fi
-
-log "Profile target created: ${PROFILE_TARGET_ID}"
-
-log "Setting execution for user.human.profile.changed event..."
-
-PROFILE_EXEC_RESPONSE=$(curl -s -X POST \
-  "${ZITADEL_URL}/zitadel.action.v2beta.ActionService/SetExecution" \
-  -H "Authorization: Bearer ${PAT}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "condition": {
-      "event": {
-        "event": "user.human.profile.changed"
-      }
-    },
-    "targets": ["'"${PROFILE_TARGET_ID}"'"]
-  }')
-
-log "Profile execution response: ${PROFILE_EXEC_RESPONSE}"
-
-if echo "$PROFILE_EXEC_RESPONSE" | jq -e '.code' >/dev/null 2>&1; then
-  log "Profile execution creation failed: $PROFILE_EXEC_RESPONSE"
-  fail "Failed to set profile execution."
-fi
+wait_for_log "received event"  "Service received catch-all event"
 
 # ---------------------------------------------------------------------------
-# 9. Update the test user's profile (triggers user.human.profile.changed)
+# 9. Verify request handler
+# ---------------------------------------------------------------------------
+
+wait_for_log "received request"  "Service received request hook"
+
+# ---------------------------------------------------------------------------
+# 10. Verify response handler
+# ---------------------------------------------------------------------------
+
+wait_for_log "received response"  "Service received response hook"
+
+# ---------------------------------------------------------------------------
+# 11. Update profile (triggers user.human.profile.changed)
 # ---------------------------------------------------------------------------
 
 log "Updating test user profile..."
@@ -262,26 +255,10 @@ if echo "$UPDATE_RESPONSE" | jq -e '.code' >/dev/null 2>&1; then
 fi
 
 # ---------------------------------------------------------------------------
-# 10. Wait for the user.human.profile.changed webhook to fire
+# 12. Verify profile changed handler
 # ---------------------------------------------------------------------------
 
-log "Waiting for UserHumanProfileChanged webhook delivery (polling every 2s, max 30s)..."
-
-webhook_wait=0
-while true; do
-  SERVICE_LOGS=$(compose logs service 2>/dev/null || true)
-  if echo "$SERVICE_LOGS" | grep -q "received UserHumanProfileChanged event"; then
-    log "PASS: Service received UserHumanProfileChanged event."
-    break
-  fi
-  if [ "$webhook_wait" -ge 30 ]; then
-    log "Service logs:"
-    echo "$SERVICE_LOGS"
-    fail "UserHumanProfileChanged log line not found within 30s."
-  fi
-  sleep 2
-  webhook_wait=$((webhook_wait + 2))
-done
+wait_for_log "received UserHumanProfileChanged event"  "Service received UserHumanProfileChanged event"
 
 # ---------------------------------------------------------------------------
 # Final result

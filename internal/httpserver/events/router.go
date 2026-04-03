@@ -11,8 +11,7 @@ func SetupRoutes(router fiber.Router, logger *zerolog.Logger) {
 		logger = &nop
 	}
 
-	router.Use(makeEventLoggingMiddleware(logger))
-
+	router.Post("/event", makePostAnyEventHandler(logger))
 	router.Post("/user/human/added", makePostHumanUserAddedHandler(logger))
 	router.Post("/user/human/profile/changed", makePostHumanUserProfileChangedHandler(logger))
 }
