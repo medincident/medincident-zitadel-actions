@@ -1,8 +1,8 @@
 FirstInstance:
-  InstanceName: E2E
+  InstanceName: Integration
   DefaultLanguage: en
   Org:
-    Name: E2E
+    Name: Integration
     Human:
       UserName: zitadel-admin
       FirstName: Admin
@@ -10,8 +10,8 @@ FirstInstance:
       Password: "Password1!"
     Machine:
       Machine:
-        Username: e2e-sa
-        Name: E2E Service Account
+        Username: integration-sa
+        Name: Integration Service Account
       MachineKey:
         Type: 1
         ExpirationDate: "2030-01-01T00:00:00Z"

@@ -20,7 +20,7 @@ func makePostHumanUserProfileChangedHandler(logger *zerolog.Logger) fiber.Handle
 		}
 
 		logger.Info().
-			Str("user_id", envelope.AggregateID).
+			Str("user_id", envelope.UserID).
 			Str("event_type", envelope.EventType).
 			Str("first_name", envelope.EventPayload.FirstName).
 			Str("last_name", envelope.EventPayload.LastName).

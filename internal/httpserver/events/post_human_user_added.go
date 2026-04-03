@@ -20,7 +20,7 @@ func makePostHumanUserAddedHandler(logger *zerolog.Logger) fiber.Handler {
 		}
 
 		logger.Info().
-			Str("user_id", envelope.AggregateID).
+			Str("user_id", envelope.UserID).
 			Str("event_type", envelope.EventType).
 			Str("user_name", envelope.EventPayload.UserName).
 			Str("first_name", envelope.EventPayload.FirstName).

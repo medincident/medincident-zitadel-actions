@@ -1,8 +1,0 @@
-zerolog:
-  level: debug
-  timestamp: true
-  outputs:
-    - type: console
-      target: stdout
-      level: debug
-      pretty: false

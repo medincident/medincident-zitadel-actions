@@ -14,11 +14,15 @@ internal/
   di/                                       — samber/do providers (container.go, zerolog.go)
   httpserver/                               — fiber.App factory + route registration
   httpserver/events/                        — HTTP handlers for Zitadel webhook events
+  httpserver/requests/                      — catch-all request hook handler
+  httpserver/responses/                     — catch-all response hook handler
   log/                                      — zerolog builder (multi-output, per-output level filter)
   zitadel/actions/events/                   — Envelope[T], event payload structs
 api/proto/                                  — buf.yaml, buf.gen.yaml; .proto files go here
 pkg/                                        — buf-generated Go code (import from here)
 configs/config.example.yaml                — annotated config reference
+test/integration/zitadel/                   — integration tests (testcontainers-go)
+  data/                                     — Zitadel config & steps YAML for tests
 ```
 
 ---
@@ -35,6 +39,8 @@ configs/config.example.yaml                — annotated config reference
 | `github.com/bufbuild/buf` (go tool) | Protobuf tooling |
 | `google.golang.org/protobuf/cmd/protoc-gen-go` (go tool) | Proto → Go codegen |
 | `github.com/abice/go-enum` (go tool) | Go enum codegen |
+| `github.com/testcontainers/testcontainers-go` | Integration test containers |
+| `github.com/stretchr/testify` | Test assertions |
 
 NATS (`nats.go`) is **not yet in go.mod** — add it when implementing the JetStream integration.
 
@@ -43,9 +49,10 @@ NATS (`nats.go`) is **not yet in go.mod** — add it when implementing the JetSt
 ## Tooling
 
 ```bash
-task generate   # buf generate + go generate (runs from api/proto/)
-task fmt        # buf format -w
-task lint       # buf lint
+task generate          # buf generate + go generate (runs from api/proto/)
+task fmt               # buf format -w
+task lint              # buf lint
+task test:integration  # integration tests via testcontainers (requires Docker)
 ```
 
 No Makefile exists yet. Do not add `generate`, `fmt`, or `lint` targets to a Makefile — those belong in Taskfile.yml only.
@@ -127,7 +134,7 @@ envelope := new(events.Envelope[events.UserHumanAdded])
 c.Bind().Body(envelope)
 
 // Access the typed payload directly:
-envelope.EventPayload.Username
+envelope.EventPayload.FirstName
 ```
 
 ---
@@ -140,6 +147,16 @@ After editing `.proto` files run `task generate`.
 
 ---
 
+## Integration tests
+
+Tests live in `test/integration/zitadel/` behind `//go:build integration`.
+`TestMain` starts a shared stack via testcontainers-go (PostgreSQL + Zitadel v4.13.1) and an in-process Fiber service.
+Zitadel Actions v2 targets fire real webhooks to the service; tests verify payloads via channels.
+
+Run: `task test:integration` (requires Docker, ~30s).
+
+---
+
 ## What is not done yet (TODO.md)
 
 - NATS JetStream integration — `internal/nats/`, publisher wired into handlers
@@ -147,6 +164,6 @@ After editing `.proto` files run `task generate`.
 - Webhook HMAC signature verification middleware
 - Rate limiting middleware
 - Handlers for `/user/profile`, `/user/email`, `/user/idp`
-- Tests (unit: `Envelope[T]` binding; integration: handlers)
+- Unit tests for `Envelope[T]`
 - Makefile (`build` / `run` targets)
 - TLS termination strategy
