@@ -14,13 +14,47 @@ tasks:
       - go tool buf format -w
     dir: api/proto
 
+  fmt:check:
+    desc: Check protobuf formatting (dry-run, no files modified)
+    cmds:
+      - go tool buf format --diff --exit-code
+    dir: api/proto
+
   lint:
-    desc: Lint protobuf definitions
+    desc: Lint protobuf and Go code
+    cmds:
+      - task: lint:proto
+      - task: lint:go
+
+  lint:go:
+    desc: Lint Go code only
+    cmds:
+      - go tool golangci-lint run
+
+  lint:proto:
+    desc: Lint protobuf definitions only
     cmds:
       - go tool buf lint
     dir: api/proto
+
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - go test -race -count=1 ./...
 
   test:integration:
     desc: Run integration tests (requires Docker)
     cmds:
       - go test -tags=integration -count=1 -timeout=10m -v ./test/integration/zitadel/
+
+  test:
+    desc: Run the full test suite (unit + integration)
+    cmds:
+      - task: test:unit
+      - task: test:integration
+
+
+  vuln:
+    desc: Run Go vulnerability check
+    cmds:
+      - go tool govulncheck ./...
