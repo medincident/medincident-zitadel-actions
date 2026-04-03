@@ -1,4 +1,3 @@
-MODULE   := github.com/medincident/medincident-zitadel-actions
 ENTRY    := ./cmd/server
 BIN_NAME := server
 DIST     := ./dist
@@ -33,7 +32,7 @@ build:
 ## build-all: cross-compile for every platform in PLATFORMS
 build-all:
 	@mkdir -p $(DIST)
-	$(foreach p,$(PLATFORMS), \
+	@set -e; $(foreach p,$(PLATFORMS), \
 		$(eval os   = $(word 1,$(subst /, ,$(p)))) \
 		$(eval arch = $(word 2,$(subst /, ,$(p)))) \
 		GOOS=$(os) GOARCH=$(arch) go build -o $(DIST)/$(call bin_name,$(os),$(arch)) $(ENTRY) ; \
