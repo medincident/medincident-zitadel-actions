@@ -16,11 +16,17 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /build/server ./cmd/se
 FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates tzdata \
-    && adduser -D -u 1000 appuser
+    && addgroup -g 1000 app && adduser -u 1000 -G app -D app \
+    && mkdir -p /var/log/medincident-zitadel-actions /etc/medincident-zitadel-actions \
+    && chown app:app /var/log/medincident-zitadel-actions
 
 COPY --from=builder /build/server /usr/local/bin/server
 
-USER appuser
+USER app
+
 EXPOSE 8080
 
-CMD ["server"]
+VOLUME ["/var/log/medincident-zitadel-actions"]
+
+ENTRYPOINT ["server"]
+CMD ["-config", "/etc/medincident-zitadel-actions/config.yaml"]
