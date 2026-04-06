@@ -468,7 +468,7 @@ func fetchNATSMessage(t *testing.T, subject string, timeout time.Duration) *even
 
 	cons, err := js.CreateConsumer(ctx, "medincident", jetstream.ConsumerConfig{
 		FilterSubject: subject,
-		DeliverPolicy: jetstream.DeliverNewPolicy,
+		DeliverPolicy: jetstream.DeliverLastPerSubjectPolicy,
 		AckPolicy:     jetstream.AckExplicitPolicy,
 	})
 	require.NoError(t, err, "create NATS consumer for %s", subject)
