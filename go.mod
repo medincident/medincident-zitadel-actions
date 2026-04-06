@@ -13,6 +13,8 @@ tool (
 require (
 	github.com/gofiber/contrib/v3/zerolog v1.0.1
 	github.com/gofiber/fiber/v3 v3.1.0
+	github.com/google/uuid v1.6.0
+	github.com/nats-io/nats.go v1.50.0
 	github.com/rs/zerolog v1.35.0
 	github.com/samber/do/v2 v2.0.0
 	github.com/samber/oops v1.21.0
@@ -164,7 +166,6 @@ require (
 	github.com/google/cel-go v0.27.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-containerregistry v0.21.3 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gordonklaus/ineffassign v0.2.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect
 	github.com/gostaticanalysis/comment v1.5.0 // indirect
@@ -231,6 +232,8 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
+	github.com/nats-io/nkeys v0.4.15 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nishanths/exhaustive v0.12.0 // indirect
 	github.com/nishanths/predeclared v0.2.2 // indirect
 	github.com/nunnatsa/ginkgolinter v0.23.0 // indirect
