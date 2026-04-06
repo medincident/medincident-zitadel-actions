@@ -10,10 +10,13 @@ HTTP gateway: **Zitadel Actions v2 → NATS JetStream**, written in Go 1.26.1.
 cmd/server/main.go                          — entry point, graceful shutdown
 internal/
   config/                                   — YAML config types + reader
-  di/                                       — samber/do providers (container, zerolog, fiber)
+  di/                                       — samber/do providers (container, zerolog, fiber, nats)
   handler/                                  — HTTP handlers for all Zitadel webhook endpoints
+  mapper/                                   — Zitadel → proto event mappers
+  middleware/                               — Fiber middleware (ContentType, HMAC)
+  publish/                                  — NATS JetStream publishing helper
   zitadel/                                  — Envelope[T], event payload structs
-api/proto/                                  — buf.yaml, buf.gen.yaml; .proto files go here
+buf.gen.yaml                                — buf codegen config (remote git_repo input)
 pkg/                                        — buf-generated Go code (import from here)
 configs/config.example.yaml                — annotated config reference
 test/integration/zitadel/                   — integration tests (testcontainers-go)
@@ -30,6 +33,8 @@ test/integration/zitadel/                   — integration tests (testcontainer
 | `github.com/rs/zerolog` | Structured JSON logging |
 | `github.com/samber/do/v2` | Dependency injection container |
 | `github.com/samber/oops` | Structured errors with stack traces |
+| `github.com/nats-io/nats.go` | NATS client + JetStream |
+| `github.com/google/uuid` | UUID generation for event IDs |
 | `gopkg.in/yaml.v3` | YAML config parsing |
 | `github.com/bufbuild/buf` (go tool) | Protobuf tooling |
 | `google.golang.org/protobuf/cmd/protoc-gen-go` (go tool) | Proto → Go codegen |
@@ -37,16 +42,13 @@ test/integration/zitadel/                   — integration tests (testcontainer
 | `github.com/testcontainers/testcontainers-go` | Integration test containers |
 | `github.com/stretchr/testify` | Test assertions |
 
-NATS (`nats.go`) is **not yet in go.mod** — add it when implementing the JetStream integration.
-
 ---
 
 ## Tooling
 
 ```bash
-task generate          # buf generate + go generate (runs from api/proto/)
-task fmt               # buf format -w
-task lint              # buf lint
+task generate          # buf generate from remote proto repo + go generate
+task lint              # golangci-lint
 task test:integration  # integration tests via testcontainers (requires Docker)
 ```
 
@@ -68,9 +70,8 @@ See `configs/config.example.yaml` for the full annotated reference.
 2. `do.Invoke[*fiber.App](injector)` bootstraps the full dependency graph.
 3. External deps that need cleanup implement `Shutdown(ctx context.Context) error` — samber/do calls them on `injector.ShutdownWithContext(ctx)`.
 
-When adding a new infrastructure component (e.g. NATS client):
-- Create `internal/<component>/` with a struct wrapping the client.
-- Add a `Shutdown(ctx context.Context) error` method.
+When adding a new infrastructure component:
+- For simple clients, a thin DI provider in `di/` with a wrapper struct for lifecycle is sufficient (see `di/nats.go`).
 - Register a `do.Provide` in `di/container.go`.
 
 ---
@@ -80,24 +81,26 @@ When adding a new infrastructure component (e.g. NATS client):
 Handlers live in `internal/handler/`. Each handler is a public constructor returning `fiber.Handler`:
 
 ```go
-func PostFoo(logger *zerolog.Logger) fiber.Handler {
+func PostFoo(logger *zerolog.Logger, js jetstream.JetStream) fiber.Handler {
     return func(c fiber.Ctx) error { ... }
 }
 ```
 
-Register in `di/fiber.go`. Pass only what the handler needs (logger, publisher, etc.) — no god objects.
+Register in `di/fiber.go`. Pass only what the handler needs (logger, JetStream, etc.) — no god objects.
 
 ---
 
 ## Error handling
 
-Use `samber/oops` for all error construction:
+Use `samber/oops` for internal errors in handlers and publishers:
 
 ```go
 return oops.In("component").Code("snake_case_code").With("key", val).Wrap(err)
-// or
-return oops.In("component").Code("snake_case_code").Errorf("message")
 ```
+
+Use `*fiber.Error` for expected client errors in middleware (401, 422).
+
+Fiber `ErrorHandler` in `di/fiber.go` distinguishes between the two: `*fiber.Error` returns the HTTP status, oops errors log with stack trace and return 500.
 
 Never use `fmt.Errorf` with `%w` — oops handles wrapping and stack traces.
 
@@ -136,29 +139,38 @@ envelope.EventPayload.FirstName
 
 ## Protobuf
 
-Proto source files belong in `api/proto/medincident/zitadel/v1/`.
-Generated Go code lands in `pkg/medincident/zitadel/v1/` (set by `buf.gen.yaml`).
-After editing `.proto` files run `task generate`.
+Proto source lives in `github.com/medincident/medincident-proto` (remote repo).
+`buf.gen.yaml` in project root fetches protos via `git_repo` input and generates Go code into `pkg/`.
+Generated packages: `pkg/medincident/events/v1/` and `pkg/medincident/users/v1/`.
+Run `task generate` to regenerate.
+
+---
+
+## Event mapping pipeline
+
+1. Zitadel webhook → handler binds `Envelope[T]`
+2. Handler calls mapper (`internal/mapper/`) → `[]MappedEvent` (subject + proto message)
+3. Handler calls `publish.PublishEvents()` → wraps in `eventsv1.Envelope` with `google.protobuf.Any`, publishes to NATS JetStream
+4. NATS subjects: `medincident.users.v1.created`, `medincident.users.v1.name_changed`, etc.
+
+Profile changes are split into sub-events based on which fields are non-nil (pointer detection).
 
 ---
 
 ## Integration tests
 
 Tests live in `test/integration/zitadel/` behind `//go:build integration`.
-`TestMain` starts a shared stack via testcontainers-go (PostgreSQL + Zitadel v4.13.1) and an in-process Fiber service.
-Zitadel Actions v2 targets fire real webhooks to the service; tests verify payloads via channels.
+`TestMain` starts a shared stack via testcontainers-go (PostgreSQL + NATS + Zitadel v4.13.1) and an in-process Fiber service.
+Zitadel Actions v2 targets fire real webhooks to the service; tests verify payloads via channels and NATS message assertions.
 
-Run: `task test:integration` (requires Docker, ~30s).
+Run: `task test:integration` (requires Docker).
 
 ---
 
 ## What is not done yet (TODO.md)
 
-- NATS JetStream integration — `internal/nats/`, publisher wired into handlers
-- Protobuf message definitions and codegen
-- Webhook HMAC signature verification middleware
 - Rate limiting middleware
-- Handlers for `/user/profile`, `/user/email`, `/user/idp`
+- Handlers for `/user/email`, `/user/idp`
 - Unit tests for `Envelope[T]`
 - Makefile (`build` / `run` targets)
 - TLS termination strategy
