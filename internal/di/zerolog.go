@@ -1,84 +1,114 @@
 package di
 
 import (
+	"context"
+	"errors"
+	"io"
 	"os"
+	"path/filepath"
+	"slices"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 	"github.com/samber/oops"
+	oopszerolog "github.com/samber/oops/loggers/zerolog"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
-	applog "github.com/medincident/medincident-zitadel-actions/internal/log"
 )
 
-// ProvideZerolog is a samber/do provider for *zerolog.Logger.
-func ProvideZerolog(injector do.Injector) (*zerolog.Logger, error) {
-	logConfig, err := do.Invoke[*config.ZerologConfig](injector)
+// loggerWrapper holds the logger and a cleanup function that closes file handles.
+// It implements do.ShutdownerWithContextAndError so samber/do calls Shutdown
+// when the injector shuts down.
+type loggerWrapper struct {
+	logger  *zerolog.Logger
+	cleanup func() error
+}
+
+func (w *loggerWrapper) Shutdown(_ context.Context) error {
+	return oops.In("di/zerolog").Code("cleanup_failed").Wrap(w.cleanup())
+}
+
+// ProvideLoggerWrapper is a samber/do provider for *loggerWrapper.
+func ProvideLoggerWrapper(injector do.Injector) (*loggerWrapper, error) {
+	cfg := do.MustInvoke[*config.Config](injector)
+	logger, cleanup, err := buildZerolog(&cfg.Zerolog)
 	if err != nil {
 		return nil, err
 	}
-	logger, _, err := buildZerolog(logConfig)
-	// TODO: wire the cleanup func to application shutdown so log files are flushed and closed.
-	return logger, err
+	return &loggerWrapper{logger: logger, cleanup: cleanup}, nil
+}
+
+// ProvideZerolog is a samber/do provider for *zerolog.Logger.
+func ProvideZerolog(injector do.Injector) (*zerolog.Logger, error) {
+	w, err := do.Invoke[*loggerWrapper](injector)
+	if err != nil {
+		return nil, err
+	}
+	return w.logger, nil
 }
 
 func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, error) {
-	eb := oops.In("do/zerolog")
+	eb := oops.In("di/zerolog")
 
-	var opts []applog.Option
-
+	// Parse global level.
+	globalLevel := zerolog.InfoLevel
 	if cfg.Level != "" {
 		level, err := zerolog.ParseLevel(string(cfg.Level))
 		if err != nil {
 			return nil, nil, eb.Code("invalid_level").Errorf("invalid log level %q", cfg.Level)
 		}
-		opts = append(opts, applog.WithLevel(level))
+		globalLevel = level
 	}
 
-	if cfg.Caller {
-		opts = append(opts, applog.WithCaller())
-	}
-	if cfg.CallerSkip > 0 {
-		opts = append(opts, applog.WithCallerSkip(cfg.CallerSkip))
-	}
-
-	if cfg.Timestamp != nil && !*cfg.Timestamp {
-		opts = append(opts, applog.WithNoTimestamp())
-	}
-
+	// Resolve time format.
+	timeFormat := time.RFC3339
 	if cfg.TimeFormat != "" {
-		opts = append(opts, applog.WithTimeFormat(cfg.TimeFormat))
+		timeFormat = cfg.TimeFormat
 	}
 
-	if cfg.TimeUTC {
-		opts = append(opts, applog.WithTimeUTC())
-	}
-
-	for key, value := range cfg.Fields {
-		opts = append(opts, applog.WithStr(key, value))
-	}
+	// Build outputs.
+	var (
+		outputs   []zerolog.LevelWriter
+		closers   []io.Closer
+		writers   []*os.File
+		filePaths []string
+	)
 
 	for idx := range cfg.Outputs {
 		out := &cfg.Outputs[idx]
-		outputOpts, err := buildOutputOptions(out)
-		if err != nil {
-			return nil, nil, eb.With("output_index", idx).Wrap(err)
-		}
 
 		switch out.Type {
 		case config.ZerologOutputTypeConsole:
-			w := os.Stderr
-			if out.Target == config.ZerologConsoleTargetStdout {
-				w = os.Stdout
+			w := consoleTarget(out.Target)
+			if slices.Contains(writers, w) {
+				return nil, nil, eb.Code("duplicate_writer").With("output_index", idx).
+					Errorf("duplicate console output for %s", out.Target)
 			}
-			opts = append(opts, applog.WithConsole(w, outputOpts...))
+			writers = append(writers, w)
+			outputs = append(outputs, buildOutputWriter(w, out, timeFormat))
 
 		case config.ZerologOutputTypeFile:
 			if out.Path == "" {
 				return nil, nil, eb.Code("missing_file_path").With("output_index", idx).
 					Errorf("file output requires a non-empty path")
 			}
-			opts = append(opts, applog.WithFile(out.Path, outputOpts...))
+			abs, err := filepath.Abs(out.Path)
+			if err != nil {
+				return nil, nil, eb.With("output_index", idx).Wrap(err)
+			}
+			if slices.Contains(filePaths, abs) {
+				return nil, nil, eb.Code("duplicate_file").With("output_index", idx).
+					Errorf("duplicate file output %q", abs)
+			}
+			filePaths = append(filePaths, abs)
+
+			f, err := os.OpenFile(out.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+			if err != nil {
+				return nil, nil, eb.With("output_index", idx).Wrap(err)
+			}
+			closers = append(closers, f)
+			outputs = append(outputs, buildOutputWriter(f, out, timeFormat))
 
 		default:
 			return nil, nil, eb.Code("unknown_output_type").With("output_index", idx).
@@ -86,45 +116,117 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 		}
 	}
 
-	return applog.New(opts...)
+	// Compose multi-writer.
+	var w io.Writer
+	switch len(outputs) {
+	case 0:
+		w = io.Discard
+	case 1:
+		w = outputs[0]
+	default:
+		ws := make([]io.Writer, len(outputs))
+		for i, lw := range outputs {
+			ws[i] = lw
+		}
+		w = zerolog.MultiLevelWriter(ws...)
+	}
+
+	// Set zerolog package-level globals.
+	zerolog.TimeFieldFormat = timeFormat
+	zerolog.ErrorMarshalFunc = oopszerolog.OopsMarshalFunc
+	zerolog.ErrorStackMarshaler = oopszerolog.OopsStackMarshaller
+	if cfg.TimeUTC {
+		zerolog.TimestampFunc = func() time.Time { return time.Now().UTC() }
+	}
+
+	// Build logger.
+	logger := zerolog.New(w).Level(globalLevel)
+	ctx := logger.With()
+
+	timestamp := true
+	if cfg.Timestamp != nil {
+		timestamp = *cfg.Timestamp
+	}
+	if timestamp {
+		ctx = ctx.Timestamp()
+	}
+
+	switch {
+	case cfg.Caller && cfg.CallerSkip > 0:
+		ctx = ctx.CallerWithSkipFrameCount(zerolog.CallerSkipFrameCount + cfg.CallerSkip)
+	case cfg.Caller:
+		ctx = ctx.Caller()
+	}
+
+	for key, value := range cfg.Fields {
+		ctx = ctx.Str(key, value)
+	}
+
+	// Build cleanup.
+	cleanup := func() error { return nil }
+	if len(closers) > 0 {
+		cleanup = func() error {
+			var errs []error
+			for i := len(closers) - 1; i >= 0; i-- {
+				if err := closers[i].Close(); err != nil {
+					errs = append(errs, err)
+				}
+			}
+			return errors.Join(errs...)
+		}
+	}
+
+	result := ctx.Logger()
+	return &result, cleanup, nil
 }
 
-func buildOutputOptions(out *config.ZerologOutputConfig) ([]applog.OutputOption, error) {
-	eb := oops.In("do/zerolog")
+func consoleTarget(target config.ZerologConsoleTarget) *os.File {
+	if target == config.ZerologConsoleTargetStdout {
+		return os.Stdout
+	}
+	return os.Stderr
+}
 
-	var opts []applog.OutputOption
+func buildOutputWriter(w io.Writer, out *config.ZerologOutputConfig, globalTimeFormat string) zerolog.LevelWriter {
+	// Determine if pretty mode.
+	pretty := false
+	if out.Pretty != nil {
+		pretty = *out.Pretty
+	} else if out.Type == config.ZerologOutputTypeConsole {
+		pretty = true
+	}
 
+	// Resolve per-output time format.
+	tf := globalTimeFormat
+	if out.TimeFormat != "" {
+		tf = out.TimeFormat
+	}
+
+	var base zerolog.LevelWriter
+	if pretty {
+		cw := zerolog.ConsoleWriter{
+			Out:        w,
+			NoColor:    out.NoColor,
+			TimeFormat: tf,
+		}
+		if len(out.PartsOrder) > 0 {
+			cw.PartsOrder = out.PartsOrder
+		}
+		if len(out.PartsExclude) > 0 {
+			cw.PartsExclude = out.PartsExclude
+		}
+		base = zerolog.LevelWriterAdapter{Writer: cw}
+	} else {
+		base = zerolog.LevelWriterAdapter{Writer: w}
+	}
+
+	// Per-output level filtering.
 	if out.Level != "" {
 		level, err := zerolog.ParseLevel(string(out.Level))
-		if err != nil {
-			return nil, eb.Code("invalid_output_level").Errorf("invalid output level %q", out.Level)
-		}
-		opts = append(opts, applog.OutputLevel(level))
-	}
-
-	if out.Pretty != nil {
-		if *out.Pretty {
-			opts = append(opts, applog.OutputPretty())
-		} else {
-			opts = append(opts, applog.OutputJSON())
+		if err == nil && level > zerolog.TraceLevel {
+			return &zerolog.FilteredLevelWriter{Writer: base, Level: level}
 		}
 	}
 
-	if out.NoColor {
-		opts = append(opts, applog.OutputNoColor())
-	}
-
-	if out.TimeFormat != "" {
-		opts = append(opts, applog.OutputTimeFormat(out.TimeFormat))
-	}
-
-	if len(out.PartsOrder) > 0 {
-		opts = append(opts, applog.OutputPartsOrder(out.PartsOrder...))
-	}
-
-	if len(out.PartsExclude) > 0 {
-		opts = append(opts, applog.OutputPartsExclude(out.PartsExclude...))
-	}
-
-	return opts, nil
+	return base
 }

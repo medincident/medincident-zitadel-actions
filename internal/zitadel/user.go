@@ -1,4 +1,4 @@
-package events
+package zitadel
 
 // UserHumanAdded is the payload of the user.human.added Zitadel event.
 // See: https://zitadel.com/docs/guides/integrate/actions/testing-event#example-call

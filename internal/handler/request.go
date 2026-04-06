@@ -1,4 +1,4 @@
-package responses
+package handler
 
 import (
 	"encoding/json"
@@ -7,7 +7,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func makePostAnyResponseHandler(logger *zerolog.Logger) fiber.Handler {
+// PostAnyRequest returns a handler for the catch-all POST /requests endpoint.
+func PostAnyRequest(logger *zerolog.Logger) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		if !c.Is("json") {
 			return fiber.ErrUnprocessableEntity
@@ -24,7 +25,7 @@ func makePostAnyResponseHandler(logger *zerolog.Logger) fiber.Handler {
 			}
 		}
 
-		event.Msg("received response")
+		event.Msg("received request")
 
 		return c.SendStatus(fiber.StatusOK)
 	}
