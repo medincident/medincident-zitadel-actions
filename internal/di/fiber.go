@@ -2,14 +2,19 @@ package di
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	fiberzerolog "github.com/gofiber/contrib/v3/zerolog"
 	"github.com/gofiber/fiber/v3"
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
+	"github.com/medincident/medincident-zitadel-actions/internal/config"
 	"github.com/medincident/medincident-zitadel-actions/internal/handler"
+	"github.com/medincident/medincident-zitadel-actions/internal/middleware"
 )
 
 // fiberWrapper holds *fiber.App and implements do.ShutdownerWithContextAndError
@@ -24,7 +29,10 @@ func (w *fiberWrapper) Shutdown(ctx context.Context) error {
 
 // ProvideFiberWrapper is a samber/do provider for *fiberWrapper.
 func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
-	logger, err := do.Invoke[*zerolog.Logger](injector)
+	cfg := do.MustInvoke[*config.Config](injector)
+	logger := do.MustInvoke[*zerolog.Logger](injector)
+	nc := do.MustInvoke[*nats.Conn](injector)
+	js, err := do.Invoke[jetstream.JetStream](injector)
 	if err != nil {
 		return nil, err
 	}
@@ -33,21 +41,46 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		BodyLimit:    64 * 1024,
+		ErrorHandler: errorHandler(logger),
 	})
 
 	app.Use(fiberzerolog.New(fiberzerolog.Config{Logger: logger}))
 
-	app.Get("/", func(c fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusOK)
-	})
+	// Health check (no middleware).
+	app.Get("/health", handler.HealthCheck(nc))
 
-	app.Post("/events", handler.PostAnyEvent(logger))
-	app.Post("/events/user/human/added", handler.PostHumanUserAdded(logger))
-	app.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(logger))
-	app.Post("/requests", handler.PostAnyRequest(logger))
-	app.Post("/responses", handler.PostAnyResponse(logger))
+	// POST routes with ContentType + HMAC middleware.
+	post := app.Group("", middleware.ContentType(), middleware.HMACVerify(cfg.SigningKey))
+
+	post.Post("/debug", handler.PostDebugWebhook(logger))
+	post.Post("/events/user/human/added", handler.PostHumanUserAdded(logger, js))
+	post.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(logger, js))
 
 	return &fiberWrapper{app: app}, nil
+}
+
+// errorHandler returns a Fiber ErrorHandler that distinguishes between
+// client errors (*fiber.Error) and internal errors (oops / unknown).
+func errorHandler(logger *zerolog.Logger) fiber.ErrorHandler {
+	return func(c fiber.Ctx, err error) error {
+		var fe *fiber.Error
+		if errors.As(err, &fe) {
+			return c.Status(fe.Code).JSON(fiber.Map{
+				"error": fe.Message,
+			})
+		}
+
+		// Log internal errors with full context.
+		logger.Error().
+			Str("method", c.Method()).
+			Str("path", c.Path()).
+			Err(err).
+			Msg("internal error")
+
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "internal server error",
+		})
+	}
 }
 
 // ProvideFiberApp is a samber/do provider for *fiber.App.
