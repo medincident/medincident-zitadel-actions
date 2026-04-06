@@ -2,40 +2,15 @@ version: "3"
 
 tasks:
   generate:
-    desc: Generate protobuf and Go enum code
+    desc: Generate Go code from remote protobuf definitions
     cmds:
       - go tool buf generate
       - go generate {{.ROOT_DIR}}/...
-    dir: api/proto
-
-  fmt:
-    desc: Format protobuf definitions
-    cmds:
-      - go tool buf format -w
-    dir: api/proto
-
-  fmt:check:
-    desc: Check protobuf formatting (dry-run, no files modified)
-    cmds:
-      - go tool buf format --diff --exit-code
-    dir: api/proto
 
   lint:
-    desc: Lint protobuf and Go code
-    cmds:
-      - task: lint:proto
-      - task: lint:go
-
-  lint:go:
-    desc: Lint Go code only
+    desc: Lint Go code
     cmds:
       - go tool golangci-lint run
-
-  lint:proto:
-    desc: Lint protobuf definitions only
-    cmds:
-      - go tool buf lint
-    dir: api/proto
 
   test:unit:
     desc: Run unit tests only
@@ -52,7 +27,6 @@ tasks:
     cmds:
       - task: test:unit
       - task: test:integration
-
 
   vuln:
     desc: Run Go vulnerability check
