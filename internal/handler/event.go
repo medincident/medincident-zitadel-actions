@@ -1,4 +1,4 @@
-package requests
+package handler
 
 import (
 	"encoding/json"
@@ -7,7 +7,9 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func makePostAnyRequestHandler(logger *zerolog.Logger) fiber.Handler {
+// PostAnyEvent returns a handler for the catch-all POST /events endpoint.
+// It logs the raw JSON body of any Zitadel event.
+func PostAnyEvent(logger *zerolog.Logger) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		if !c.Is("json") {
 			return fiber.ErrUnprocessableEntity
@@ -24,7 +26,7 @@ func makePostAnyRequestHandler(logger *zerolog.Logger) fiber.Handler {
 			}
 		}
 
-		event.Msg("received request")
+		event.Msg("received event")
 
 		return c.SendStatus(fiber.StatusOK)
 	}

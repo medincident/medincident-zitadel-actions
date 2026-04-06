@@ -1,59 +1,73 @@
+# Listen address for the HTTP server.
+# Default: :8080
+# address: ":8080"
+
 zerolog:
   # Global minimum log level.
   # Accepted values: trace | debug | info | warn | error | fatal | panic
-  # Supports env var injection: level: ${LOG_LEVEL}
-  level: info
+  # Default: info
+  # level: info
 
   # Append file:line caller information to every log entry.
-  caller: false
+  # Default: false
+  # caller: false
 
   # Number of extra stack frames to skip when reporting caller location.
-  # Useful when the logger is wrapped in a helper layer.
   # Only effective when caller: true.
-  caller_skip: 0
+  # Default: 0
+  # caller_skip: 0
 
   # Include an automatic timestamp field in every log entry.
-  # Set to false to disable (e.g. when the log collector adds its own timestamp).
-  timestamp: true
+  # Default: true
+  # timestamp: true
 
   # Timestamp format. Any Go time layout string is accepted.
   # Default: 2006-01-02T15:04:05Z07:00 (RFC 3339)
-  time_format: "2006-01-02T15:04:05Z07:00"
+  # time_format: "2006-01-02T15:04:05Z07:00"
 
   # Force all timestamps to UTC regardless of the system timezone.
-  time_utc: false
+  # Default: false
+  # time_utc: false
 
   # Static string fields added to every log entry.
   # Useful for tagging logs with service identity.
+  # Default: none
   fields:
     service: medincident-zitadel-actions
     env: ${APP_ENV}
 
+  # Output destinations. If empty, logs are discarded.
+  # Default: one pretty console output to stdout.
   outputs:
     # ── Console output (stdout) ───────────────────────────────────────────────
     - type: console
 
       # Which standard stream to write to.
-      # Accepted values: stdout | stderr  (default: stderr)
+      # Accepted values: stdout | stderr
+      # Default: stdout
       target: stdout
 
       # Minimum level for this output. Entries below this level are dropped
       # for this output only, regardless of the global level above.
-      level: debug
+      # Default: inherits global level
+      # level: info
 
       # Human-readable (ConsoleWriter) formatting.
-      # Defaults to true for console outputs; set to false for JSON.
+      # Default: true
       pretty: true
 
       # Disable ANSI color codes. Useful in CI or when piping output.
-      no_color: false
+      # Default: false
+      # no_color: false
 
       # Timestamp format used in pretty mode.
       # Overrides the global time_format for this output only.
+      # Default: 15:04:05
       time_format: "15:04:05"
 
       # Display order of fields in pretty mode.
       # Uses zerolog field name constants.
+      # Default: [time, level, caller, message]
       parts_order:
         - time
         - level
@@ -61,10 +75,10 @@ zerolog:
         - message
 
       # Fields to hide from pretty mode output.
-      # For example, hide "caller" if caller: false above.
-      parts_exclude: []
+      # Default: none
+      # parts_exclude: []
 
-    # ── Console output (stderr) ───────────────────────────────────────────────
+    # ── Console output (stderr, warnings only) ────────────────────────────────
     - type: console
       target: stderr
       level: warn
@@ -82,7 +96,7 @@ zerolog:
       # Minimum level for this output.
       level: warn
 
-      # JSON formatting is the default for file outputs.
+      # JSON formatting (pretty: false is default for file outputs).
       # Set to true to write pretty (human-readable) lines to the file instead.
       pretty: false
 

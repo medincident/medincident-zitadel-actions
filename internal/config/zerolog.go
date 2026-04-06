@@ -16,7 +16,7 @@ type ZerologConsoleTarget string
 
 const (
 	ZerologConsoleTargetStdout ZerologConsoleTarget = "stdout"
-	ZerologConsoleTargetStderr ZerologConsoleTarget = "stderr" // default
+	ZerologConsoleTargetStderr ZerologConsoleTarget = "stderr"
 )
 
 // ZerologOutputConfig configures a single output destination.
@@ -29,13 +29,12 @@ type ZerologOutputConfig struct {
 	Level ZerologLevel `yaml:"level"`
 
 	// Pretty controls human-readable vs JSON formatting.
-	// Defaults to true for console outputs, false for file outputs.
-	Pretty *bool `yaml:"pretty"`
+	Pretty bool `yaml:"pretty"`
 
 	// NoColor disables ANSI color codes (pretty mode only).
 	NoColor bool `yaml:"no_color"`
 
-	// TimeFormat overrides the timestamp format for this output (pretty mode only).
+	// TimeFormat overrides the timestamp format for this output.
 	// Empty inherits the global TimeFormat.
 	TimeFormat string `yaml:"time_format"`
 
@@ -46,7 +45,7 @@ type ZerologOutputConfig struct {
 	// PartsExclude hides specific fields from pretty mode output.
 	PartsExclude []string `yaml:"parts_exclude"`
 
-	// Target selects stdout or stderr for console outputs (default: stderr).
+	// Target selects stdout or stderr for console outputs.
 	Target ZerologConsoleTarget `yaml:"target"`
 
 	// Path is the log file path for file outputs.
@@ -56,7 +55,7 @@ type ZerologOutputConfig struct {
 
 // ZerologConfig is the top-level zerolog configuration block.
 type ZerologConfig struct {
-	// Level is the global minimum log level (default: "info").
+	// Level is the global minimum log level.
 	Level ZerologLevel `yaml:"level"`
 
 	// Caller appends file:line caller info to every log entry.
@@ -65,12 +64,11 @@ type ZerologConfig struct {
 	// CallerSkip adds extra stack frames to skip when Caller is true.
 	CallerSkip int `yaml:"caller_skip"`
 
-	// Timestamp enables the automatic timestamp field (default: true).
-	// Set explicitly to false to disable.
-	Timestamp *bool `yaml:"timestamp"`
+	// Timestamp enables the automatic timestamp field.
+	Timestamp bool `yaml:"timestamp"`
 
-	// TimeFormat is the timestamp format for all outputs (default: time.RFC3339).
-	// Per-output TimeFormat takes precedence in pretty mode.
+	// TimeFormat is the timestamp format for all outputs.
+	// Per-output TimeFormat takes precedence.
 	TimeFormat string `yaml:"time_format"`
 
 	// TimeUTC forces all timestamps to UTC.

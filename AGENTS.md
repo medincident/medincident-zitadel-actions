@@ -7,17 +7,12 @@ HTTP gateway: **Zitadel Actions v2 → NATS JetStream**, written in Go 1.26.1.
 ## Project layout
 
 ```
-cmd/server/main.go                          — entry point
+cmd/server/main.go                          — entry point, graceful shutdown
 internal/
-  app/                                      — App struct (fiber wrapper, graceful shutdown)
   config/                                   — YAML config types + reader
-  di/                                       — samber/do providers (container.go, zerolog.go)
-  httpserver/                               — fiber.App factory + route registration
-  httpserver/events/                        — HTTP handlers for Zitadel webhook events
-  httpserver/requests/                      — catch-all request hook handler
-  httpserver/responses/                     — catch-all response hook handler
-  log/                                      — zerolog builder (multi-output, per-output level filter)
-  zitadel/actions/events/                   — Envelope[T], event payload structs
+  di/                                       — samber/do providers (container, zerolog, fiber)
+  handler/                                  — HTTP handlers for all Zitadel webhook endpoints
+  zitadel/                                  — Envelope[T], event payload structs
 api/proto/                                  — buf.yaml, buf.gen.yaml; .proto files go here
 pkg/                                        — buf-generated Go code (import from here)
 configs/config.example.yaml                — annotated config reference
@@ -70,7 +65,7 @@ See `configs/config.example.yaml` for the full annotated reference.
 ## Dependency injection pattern
 
 1. `di.NewContainer(cfg)` registers all `do.Provide` calls.
-2. `do.Invoke[*app.App](injector)` bootstraps the full dependency graph.
+2. `do.Invoke[*fiber.App](injector)` bootstraps the full dependency graph.
 3. External deps that need cleanup implement `Shutdown(ctx context.Context) error` — samber/do calls them on `injector.ShutdownWithContext(ctx)`.
 
 When adding a new infrastructure component (e.g. NATS client):
@@ -82,15 +77,15 @@ When adding a new infrastructure component (e.g. NATS client):
 
 ## HTTP handler pattern
 
-Handlers live in `internal/httpserver/events/`. Each handler is a private constructor returning `fiber.Handler`:
+Handlers live in `internal/handler/`. Each handler is a public constructor returning `fiber.Handler`:
 
 ```go
-func makeFooHandler(logger *zerolog.Logger) fiber.Handler {
+func PostFoo(logger *zerolog.Logger) fiber.Handler {
     return func(c fiber.Ctx) error { ... }
 }
 ```
 
-Register in `events.SetupRoutes`. Pass only what the handler needs (logger, publisher, etc.) — no god objects.
+Register in `di/fiber.go`. Pass only what the handler needs (logger, publisher, etc.) — no god objects.
 
 ---
 
@@ -126,11 +121,11 @@ logger.Info().Str("user_id", id).Str("event_type", t).Msg("received event")
 
 ## Zitadel event envelope
 
-Every Zitadel Actions v2 POST body deserialises into the generic `zitadel/actions/events.Envelope[T]`.
+Every Zitadel Actions v2 POST body deserialises into the generic `zitadel.Envelope[T]`.
 The `event_payload` field is a JSON object that is directly unmarshaled into `T`:
 
 ```go
-envelope := new(events.Envelope[events.UserHumanAdded])
+envelope := new(zitadel.Envelope[zitadel.UserHumanAdded])
 c.Bind().Body(envelope)
 
 // Access the typed payload directly:

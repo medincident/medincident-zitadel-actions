@@ -24,10 +24,8 @@ import (
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/medincident/medincident-zitadel-actions/internal/httpserver/events"
-	"github.com/medincident/medincident-zitadel-actions/internal/httpserver/requests"
-	"github.com/medincident/medincident-zitadel-actions/internal/httpserver/responses"
-	zitadelevents "github.com/medincident/medincident-zitadel-actions/internal/zitadel/actions/events"
+	"github.com/medincident/medincident-zitadel-actions/internal/handler"
+	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
 
 // Package-level state shared across all tests.
@@ -189,15 +187,15 @@ func startService() error {
 		err := c.Next()
 		if err == nil {
 			switch c.Path() {
-			case "/event":
+			case "/events":
 				trySend(eventCh, body)
-			case "/request":
+			case "/requests":
 				trySend(requestCh, body)
-			case "/response":
+			case "/responses":
 				trySend(responseCh, body)
-			case "/user/human/added":
+			case "/events/user/human/added":
 				trySend(userAddedCh, body)
-			case "/user/human/profile/changed":
+			case "/events/user/human/profile/changed":
 				trySend(profileChangedCh, body)
 			}
 		}
@@ -210,9 +208,11 @@ func startService() error {
 	})
 
 	// Register real production handlers.
-	events.SetupRoutes(app, &logger)
-	requests.SetupRoutes(app, &logger)
-	responses.SetupRoutes(app, &logger)
+	app.Post("/events", handler.PostAnyEvent(&logger))
+	app.Post("/events/user/human/added", handler.PostHumanUserAdded(&logger))
+	app.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(&logger))
+	app.Post("/requests", handler.PostAnyRequest(&logger))
+	app.Post("/responses", handler.PostAnyResponse(&logger))
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -411,7 +411,7 @@ func TestUserHumanAdded(t *testing.T) {
 	drainChannel(userAddedCh)
 
 	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
-	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/user/human/added", servicePort)
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/events/user/human/added", servicePort)
 
 	tid, err := createTarget("added-"+suffix, endpoint)
 	require.NoError(t, err, "create target")
@@ -427,7 +427,7 @@ func TestUserHumanAdded(t *testing.T) {
 
 	body := waitForBody(t, userAddedCh, 30*time.Second)
 
-	var envelope zitadelevents.Envelope[zitadelevents.UserHumanAdded]
+	var envelope zitadel.Envelope[zitadel.UserHumanAdded]
 	require.NoError(t, json.Unmarshal(body, &envelope), "unmarshal envelope")
 
 	assert.Equal(t, "Test", envelope.EventPayload.FirstName)
@@ -440,7 +440,7 @@ func TestUserHumanProfileChanged(t *testing.T) {
 	drainChannel(profileChangedCh)
 
 	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
-	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/user/human/profile/changed", servicePort)
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/events/user/human/profile/changed", servicePort)
 
 	tid, err := createTarget("profile-"+suffix, endpoint)
 	require.NoError(t, err, "create target")
@@ -461,7 +461,7 @@ func TestUserHumanProfileChanged(t *testing.T) {
 
 	body := waitForBody(t, profileChangedCh, 30*time.Second)
 
-	var envelope zitadelevents.Envelope[zitadelevents.UserHumanProfileChanged]
+	var envelope zitadel.Envelope[zitadel.UserHumanProfileChanged]
 	require.NoError(t, json.Unmarshal(body, &envelope), "unmarshal envelope")
 
 	assert.Equal(t, "Updated", envelope.EventPayload.FirstName)
@@ -472,7 +472,7 @@ func TestCatchAllEvent(t *testing.T) {
 	drainChannel(eventCh)
 
 	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
-	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/event", servicePort)
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/events", servicePort)
 
 	tid, err := createTarget("event-"+suffix, endpoint)
 	require.NoError(t, err, "create target")
@@ -498,7 +498,7 @@ func TestCatchAllRequest(t *testing.T) {
 	drainChannel(requestCh)
 
 	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
-	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/request", servicePort)
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/requests", servicePort)
 
 	tid, err := createTarget("request-"+suffix, endpoint)
 	require.NoError(t, err, "create target")
@@ -521,7 +521,7 @@ func TestCatchAllResponse(t *testing.T) {
 	drainChannel(responseCh)
 
 	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
-	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/response", servicePort)
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/responses", servicePort)
 
 	tid, err := createTarget("response-"+suffix, endpoint)
 	require.NoError(t, err, "create target")
