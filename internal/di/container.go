@@ -19,7 +19,9 @@ func NewContainer(cfg *config.Config) do.Injector {
 	return injector
 }
 
-// MustStart invokes *fiber.App from the container, triggering the full dependency graph.
+// MustStart invokes *fiberWrapper from the container (triggering the full
+// dependency graph) and returns the underlying *fiber.App for Listen().
 func MustStart(injector do.Injector) *fiber.App {
-	return do.MustInvoke[*fiber.App](injector)
+	w := do.MustInvoke[*fiberWrapper](injector)
+	return w.app
 }

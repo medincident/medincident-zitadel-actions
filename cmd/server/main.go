@@ -57,9 +57,6 @@ func run() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		if err := app.ShutdownWithContext(ctx); err != nil {
-			logger.Error().Err(err).Msg("fiber shutdown error")
-		}
 		if report := injector.ShutdownWithContext(ctx); !report.Succeed {
 			logger.Error().Err(report).Msg("shutdown error")
 		}
