@@ -26,12 +26,18 @@ type loggerWrapper struct {
 }
 
 func (w *loggerWrapper) Shutdown(_ context.Context) error {
-	return oops.In("di/zerolog").Code("cleanup_failed").Wrap(w.cleanup())
+	if err := w.cleanup(); err != nil {
+		return oops.In("di/zerolog").Code("cleanup_failed").Wrap(err)
+	}
+	return nil
 }
 
 // ProvideLoggerWrapper is a samber/do provider for *loggerWrapper.
 func ProvideLoggerWrapper(injector do.Injector) (*loggerWrapper, error) {
-	cfg := do.MustInvoke[*config.Config](injector)
+	cfg, err := do.Invoke[*config.Config](injector)
+	if err != nil {
+		return nil, err
+	}
 	logger, cleanup, err := buildZerolog(&cfg.Zerolog)
 	if err != nil {
 		return nil, err
@@ -51,20 +57,9 @@ func ProvideZerolog(injector do.Injector) (*zerolog.Logger, error) {
 func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, error) {
 	eb := oops.In("di/zerolog")
 
-	// Parse global level.
-	globalLevel := zerolog.InfoLevel
-	if cfg.Level != "" {
-		level, err := zerolog.ParseLevel(string(cfg.Level))
-		if err != nil {
-			return nil, nil, eb.Code("invalid_level").Errorf("invalid log level %q", cfg.Level)
-		}
-		globalLevel = level
-	}
-
-	// Resolve time format.
-	timeFormat := time.RFC3339
-	if cfg.TimeFormat != "" {
-		timeFormat = cfg.TimeFormat
+	globalLevel, err := zerolog.ParseLevel(string(cfg.Level))
+	if err != nil {
+		return nil, nil, eb.Code("invalid_level").Errorf("invalid log level %q", cfg.Level)
 	}
 
 	// Build outputs.
@@ -78,6 +73,13 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 	for idx := range cfg.Outputs {
 		out := &cfg.Outputs[idx]
 
+		if out.Level != "" {
+			if _, err := zerolog.ParseLevel(string(out.Level)); err != nil {
+				return nil, nil, eb.Code("invalid_output_level").With("output_index", idx).
+					Errorf("invalid output level %q", out.Level)
+			}
+		}
+
 		switch out.Type {
 		case config.ZerologOutputTypeConsole:
 			w := consoleTarget(out.Target)
@@ -86,7 +88,7 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 					Errorf("duplicate console output for %s", out.Target)
 			}
 			writers = append(writers, w)
-			outputs = append(outputs, buildOutputWriter(w, out, timeFormat))
+			outputs = append(outputs, buildOutputWriter(w, out, cfg.TimeFormat))
 
 		case config.ZerologOutputTypeFile:
 			if out.Path == "" {
@@ -108,7 +110,7 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 				return nil, nil, eb.With("output_index", idx).Wrap(err)
 			}
 			closers = append(closers, f)
-			outputs = append(outputs, buildOutputWriter(f, out, timeFormat))
+			outputs = append(outputs, buildOutputWriter(f, out, cfg.TimeFormat))
 
 		default:
 			return nil, nil, eb.Code("unknown_output_type").With("output_index", idx).
@@ -132,7 +134,7 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 	}
 
 	// Set zerolog package-level globals.
-	zerolog.TimeFieldFormat = timeFormat
+	zerolog.TimeFieldFormat = cfg.TimeFormat
 	zerolog.ErrorMarshalFunc = oopszerolog.OopsMarshalFunc
 	zerolog.ErrorStackMarshaler = oopszerolog.OopsStackMarshaller
 	if cfg.TimeUTC {
@@ -143,11 +145,7 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 	logger := zerolog.New(w).Level(globalLevel)
 	ctx := logger.With()
 
-	timestamp := true
-	if cfg.Timestamp != nil {
-		timestamp = *cfg.Timestamp
-	}
-	if timestamp {
+	if cfg.Timestamp {
 		ctx = ctx.Timestamp()
 	}
 
@@ -188,14 +186,6 @@ func consoleTarget(target config.ZerologConsoleTarget) *os.File {
 }
 
 func buildOutputWriter(w io.Writer, out *config.ZerologOutputConfig, globalTimeFormat string) zerolog.LevelWriter {
-	// Determine if pretty mode.
-	pretty := false
-	if out.Pretty != nil {
-		pretty = *out.Pretty
-	} else if out.Type == config.ZerologOutputTypeConsole {
-		pretty = true
-	}
-
 	// Resolve per-output time format.
 	tf := globalTimeFormat
 	if out.TimeFormat != "" {
@@ -203,7 +193,7 @@ func buildOutputWriter(w io.Writer, out *config.ZerologOutputConfig, globalTimeF
 	}
 
 	var base zerolog.LevelWriter
-	if pretty {
+	if out.Pretty {
 		cw := zerolog.ConsoleWriter{
 			Out:        w,
 			NoColor:    out.NoColor,

@@ -1,6 +1,7 @@
 package di
 
 import (
+	"context"
 	"time"
 
 	fiberzerolog "github.com/gofiber/contrib/v3/zerolog"
@@ -11,8 +12,18 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/handler"
 )
 
-// ProvideFiberApp is a samber/do provider for *fiber.App.
-func ProvideFiberApp(injector do.Injector) (*fiber.App, error) {
+// fiberWrapper holds *fiber.App and implements do.ShutdownerWithContextAndError
+// so samber/do gracefully shuts down the HTTP server.
+type fiberWrapper struct {
+	app *fiber.App
+}
+
+func (w *fiberWrapper) Shutdown(ctx context.Context) error {
+	return w.app.ShutdownWithContext(ctx)
+}
+
+// ProvideFiberWrapper is a samber/do provider for *fiberWrapper.
+func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	logger, err := do.Invoke[*zerolog.Logger](injector)
 	if err != nil {
 		return nil, err
@@ -36,5 +47,15 @@ func ProvideFiberApp(injector do.Injector) (*fiber.App, error) {
 	app.Post("/requests", handler.PostAnyRequest(logger))
 	app.Post("/responses", handler.PostAnyResponse(logger))
 
-	return app, nil
+	return &fiberWrapper{app: app}, nil
+}
+
+// ProvideFiberApp is a samber/do provider for *fiber.App.
+// It delegates to *fiberWrapper, which owns the lifecycle.
+func ProvideFiberApp(injector do.Injector) (*fiber.App, error) {
+	w, err := do.Invoke[*fiberWrapper](injector)
+	if err != nil {
+		return nil, err
+	}
+	return w.app, nil
 }

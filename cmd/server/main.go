@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
 
@@ -33,18 +34,32 @@ func run() error {
 	}
 
 	injector := di.NewContainer(cfg)
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if report := injector.ShutdownWithContext(ctx); !report.Succeed {
+			fmt.Fprintf(os.Stderr, "shutdown error: %v\n", report)
+		}
+	}()
 
-	app := di.MustStart(injector)
-	logger := do.MustInvoke[*zerolog.Logger](injector)
+	app, err := do.Invoke[*fiber.App](injector)
+	if err != nil {
+		return err
+	}
 
-	logger.Info().Str("addr", ":8080").Msg("starting server")
+	logger, err := do.Invoke[*zerolog.Logger](injector)
+	if err != nil {
+		return err
+	}
+
+	logger.Info().Str("addr", cfg.Address).Msg("starting server")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	done := make(chan error, 1)
 
 	go func() {
-		done <- app.Listen(":8080")
+		done <- app.Listen(cfg.Address)
 	}()
 
 	select {
@@ -54,18 +69,8 @@ func run() error {
 			return err
 		}
 	case <-quit:
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		if err := app.ShutdownWithContext(ctx); err != nil {
-			logger.Error().Err(err).Msg("fiber shutdown error")
-		}
-		if report := injector.ShutdownWithContext(ctx); !report.Succeed {
-			logger.Error().Err(report).Msg("shutdown error")
-		}
+		logger.Info().Msg("shutting down")
 	}
-
-	logger.Info().Msg("server stopped")
 
 	return nil
 }

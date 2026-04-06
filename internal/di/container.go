@@ -1,7 +1,6 @@
 package di
 
 import (
-	"github.com/gofiber/fiber/v3"
 	"github.com/samber/do/v2"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
@@ -14,12 +13,8 @@ func NewContainer(cfg *config.Config) do.Injector {
 	do.ProvideValue(injector, cfg)
 	do.Provide(injector, ProvideLoggerWrapper)
 	do.Provide(injector, ProvideZerolog)
+	do.Provide(injector, ProvideFiberWrapper)
 	do.Provide(injector, ProvideFiberApp)
 
 	return injector
-}
-
-// MustStart invokes *fiber.App from the container, triggering the full dependency graph.
-func MustStart(injector do.Injector) *fiber.App {
-	return do.MustInvoke[*fiber.App](injector)
 }

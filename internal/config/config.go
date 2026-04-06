@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"github.com/samber/oops"
 	"gopkg.in/yaml.v3"
@@ -9,7 +10,28 @@ import (
 
 // Config is the root application configuration.
 type Config struct {
+	Address string        `yaml:"address"`
 	Zerolog ZerologConfig `yaml:"zerolog"`
+}
+
+func defaultConfig() Config {
+	return Config{
+		Address: ":8080",
+		Zerolog: ZerologConfig{
+			Level:      "info",
+			Timestamp:  true,
+			TimeFormat: time.RFC3339,
+			Outputs: []ZerologOutputConfig{
+				{
+					Type:       ZerologOutputTypeConsole,
+					Target:     ZerologConsoleTargetStdout,
+					Pretty:     true,
+					TimeFormat: "15:04:05",
+					PartsOrder: []string{"time", "level", "caller", "message"},
+				},
+			},
+		},
+	}
 }
 
 // Read loads a YAML config file from path and expands ${VAR} / $VAR
@@ -26,7 +48,7 @@ func Read(path string) (*Config, error) {
 
 	expanded := os.ExpandEnv(string(data))
 
-	var cfg Config
+	cfg := defaultConfig()
 	if err := yaml.Unmarshal([]byte(expanded), &cfg); err != nil {
 		return nil, oops.
 			In("config").
