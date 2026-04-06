@@ -10,13 +10,23 @@ import (
 
 // Config is the root application configuration.
 type Config struct {
-	Address string        `yaml:"address"`
-	Zerolog ZerologConfig `yaml:"zerolog"`
+	Address    string        `yaml:"address"`
+	SigningKey string        `yaml:"signing_key"`
+	Nats       NatsConfig    `yaml:"nats"`
+	Zerolog    ZerologConfig `yaml:"zerolog"`
+}
+
+// NatsConfig holds NATS connection settings.
+type NatsConfig struct {
+	URL string `yaml:"url"`
 }
 
 func defaultConfig() Config {
 	return Config{
 		Address: ":8080",
+		Nats: NatsConfig{
+			URL: "nats://localhost:4222",
+		},
 		Zerolog: ZerologConfig{
 			Level:      "info",
 			Timestamp:  true,

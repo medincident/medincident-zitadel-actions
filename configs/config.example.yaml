@@ -2,6 +2,17 @@
 # Default: :8080
 # address: ":8080"
 
+# HMAC signing key for Zitadel webhook signature verification.
+# This key must match the signing key configured in your Zitadel Targets.
+# Required for production. If empty, HMAC verification is skipped (development only).
+# signing_key: ${ZITADEL_SIGNING_KEY}
+
+# NATS connection settings.
+nats:
+  # NATS server URL.
+  # Default: nats://localhost:4222
+  # url: nats://localhost:4222
+
 zerolog:
   # Global minimum log level.
   # Accepted values: trace | debug | info | warn | error | fatal | panic
