@@ -2,50 +2,41 @@ package handler
 
 import (
 	"github.com/gofiber/fiber/v3"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"github.com/samber/oops"
 
+	"github.com/medincident/medincident-zitadel-actions/internal/mapper"
+	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
 
-// derefStr safely dereferences a pointer to string, returning empty string if nil.
-func derefStr(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}
-
-// derefInt safely dereferences a pointer to int, returning 0 if nil.
-func derefInt(i *int) int {
-	if i == nil {
-		return 0
-	}
-	return *i
-}
-
 // PostHumanUserProfileChanged returns a handler for POST /events/user/human/profile/changed.
-func PostHumanUserProfileChanged(logger *zerolog.Logger) fiber.Handler {
+func PostHumanUserProfileChanged(logger *zerolog.Logger, js jetstream.JetStream) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		if !c.Is("json") {
-			return fiber.ErrUnprocessableEntity
-		}
-
 		envelope := new(zitadel.Envelope[zitadel.UserHumanProfileChanged])
 		if err := c.Bind().Body(envelope); err != nil {
 			return oops.In("handler").Code("bind_failed").With("event_type", "user.human.profile.changed").Wrap(err)
 		}
 
+		events := mapper.MapUserHumanProfileChanged(envelope)
+
+		if len(events) == 0 {
+			logger.Debug().
+				Str("user_id", envelope.UserID).
+				Msg("no profile fields changed, skipping publish")
+			return c.SendStatus(fiber.StatusOK)
+		}
+
+		if err := publish.PublishEvents(c.Context(), js, events, envelope.UserID); err != nil {
+			return oops.In("handler").Code("publish_failed").With("event_type", "user.human.profile.changed").With("user_id", envelope.UserID).Wrap(err)
+		}
+
 		logger.Info().
 			Str("user_id", envelope.UserID).
 			Str("event_type", envelope.EventType).
-			Str("first_name", derefStr(envelope.EventPayload.FirstName)).
-			Str("last_name", derefStr(envelope.EventPayload.LastName)).
-			Str("nick_name", derefStr(envelope.EventPayload.NickName)).
-			Str("display_name", derefStr(envelope.EventPayload.DisplayName)).
-			Str("preferred_language", derefStr(envelope.EventPayload.PreferredLanguage)).
-			Int("gender", derefInt(envelope.EventPayload.Gender)).
-			Msg("received UserHumanProfileChanged event")
+			Int("published_events", len(events)).
+			Msg("processed UserHumanProfileChanged")
 
 		return c.SendStatus(fiber.StatusOK)
 	}
