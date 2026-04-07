@@ -811,7 +811,7 @@ func TestDebugWebhook(t *testing.T) {
 	tid, err := createTarget("debug-"+suffix, endpoint)
 	require.NoError(t, err, "create target")
 
-	err = setExecution(map[string]any{"event": map[string]any{"all": true}}, tid)
+	err = setExecution(map[string]any{"event": map[string]any{"event": "user.human.added"}}, tid)
 	require.NoError(t, err, "set execution")
 
 	time.Sleep(3 * time.Second)
@@ -826,4 +826,5 @@ func TestDebugWebhook(t *testing.T) {
 	var raw map[string]any
 	require.NoError(t, json.Unmarshal(body, &raw))
 	assert.Contains(t, raw, "event_type")
+	assert.Equal(t, "user.human.added", raw["event_type"])
 }
