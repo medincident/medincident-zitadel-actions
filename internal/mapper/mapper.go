@@ -1,6 +1,9 @@
 package mapper
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -12,6 +15,9 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
 
+// eventIDNamespace is a UUID v5 namespace for deterministic event ID generation.
+var eventIDNamespace = uuid.NewSHA1(uuid.NameSpaceDNS, []byte("medincident.events"))
+
 // MappedEvent pairs a NATS subject with a ready-to-publish proto Envelope.
 type MappedEvent struct {
 	Subject  string
@@ -22,7 +28,7 @@ type MappedEvent struct {
 func MapUserHumanAdded(envelope *zitadel.Envelope[zitadel.UserHumanAdded]) ([]MappedEvent, error) {
 	p := &envelope.EventPayload
 
-	event, err := newUserMappedEvent("medincident.users.v1.created", envelope.UserID, &usersv1.UserCreated{
+	event, err := newUserMappedEvent("medincident.users.v1.created", envelope.AggregateID, envelope.Sequence, envelope.CreatedAt, envelope.UserID, &usersv1.UserCreated{
 		Username:          p.UserName,
 		FirstName:         p.FirstName,
 		LastName:          p.LastName,
@@ -46,7 +52,7 @@ func MapUserHumanProfileChanged(envelope *zitadel.Envelope[zitadel.UserHumanProf
 	var events []MappedEvent
 
 	if p.FirstName != nil || p.LastName != nil || p.DisplayName != nil || p.NickName != nil {
-		event, err := newUserMappedEvent("medincident.users.v1.name_changed", envelope.UserID, &usersv1.UserNameChanged{
+		event, err := newUserMappedEvent("medincident.users.v1.name_changed", envelope.AggregateID, envelope.Sequence, envelope.CreatedAt, envelope.UserID, &usersv1.UserNameChanged{
 			FirstName:   p.FirstName,
 			LastName:    p.LastName,
 			DisplayName: p.DisplayName,
@@ -59,7 +65,7 @@ func MapUserHumanProfileChanged(envelope *zitadel.Envelope[zitadel.UserHumanProf
 	}
 
 	if p.PreferredLanguage != nil {
-		event, err := newUserMappedEvent("medincident.users.v1.language_changed", envelope.UserID, &usersv1.UserLanguageChanged{
+		event, err := newUserMappedEvent("medincident.users.v1.language_changed", envelope.AggregateID, envelope.Sequence, envelope.CreatedAt, envelope.UserID, &usersv1.UserLanguageChanged{
 			PreferredLanguage: *p.PreferredLanguage,
 		})
 		if err != nil {
@@ -69,7 +75,7 @@ func MapUserHumanProfileChanged(envelope *zitadel.Envelope[zitadel.UserHumanProf
 	}
 
 	if p.Gender != nil {
-		event, err := newUserMappedEvent("medincident.users.v1.gender_changed", envelope.UserID, &usersv1.UserGenderChanged{
+		event, err := newUserMappedEvent("medincident.users.v1.gender_changed", envelope.AggregateID, envelope.Sequence, envelope.CreatedAt, envelope.UserID, &usersv1.UserGenderChanged{
 			Gender: mapGender(*p.Gender),
 		})
 		if err != nil {
@@ -81,8 +87,17 @@ func MapUserHumanProfileChanged(envelope *zitadel.Envelope[zitadel.UserHumanProf
 	return events, nil
 }
 
+// deterministicEventID builds a UUID v5 from the Zitadel aggregate ID, sequence,
+// and target NATS subject. This ensures the same source event always produces
+// the same event ID — even when one Zitadel event fans out into multiple
+// sub-events (each gets a unique but deterministic ID because subject differs).
+func deterministicEventID(aggregateID string, sequence uint64, subject string) string {
+	name := fmt.Sprintf("%s:%d:%s", aggregateID, sequence, subject)
+	return uuid.NewSHA1(eventIDNamespace, []byte(name)).String()
+}
+
 // newUserMappedEvent constructs a MappedEvent with a fully populated eventsv1.Envelope.
-func newUserMappedEvent(subject, aggregateID string, payload proto.Message) (MappedEvent, error) {
+func newUserMappedEvent(subject, aggregateID string, sequence uint64, occurredAt time.Time, userID string, payload proto.Message) (MappedEvent, error) {
 	pb, err := anypb.New(payload)
 	if err != nil {
 		return MappedEvent{}, err
@@ -91,10 +106,10 @@ func newUserMappedEvent(subject, aggregateID string, payload proto.Message) (Map
 	return MappedEvent{
 		Subject: subject,
 		Envelope: &eventsv1.Envelope{
-			EventId:       uuid.New().String(),
-			OccurredAt:    timestamppb.Now(),
+			EventId:       deterministicEventID(aggregateID, sequence, subject),
+			OccurredAt:    timestamppb.New(occurredAt),
 			AggregateType: "user",
-			AggregateId:   aggregateID,
+			AggregateId:   userID,
 			Payload:       pb,
 		},
 	}, nil

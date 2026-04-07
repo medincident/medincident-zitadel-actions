@@ -27,7 +27,10 @@ func PublishEvents(ctx context.Context, js jetstream.JetStream, events []mapper.
 		msg := &nats.Msg{
 			Subject: event.Subject,
 			Data:    data,
-			Header:  nats.Header{"Aggregate-Id": {event.Envelope.GetAggregateId()}},
+			Header: nats.Header{
+				"Nats-Msg-Id":  {event.Envelope.GetEventId()},
+				"Aggregate-Id": {event.Envelope.GetAggregateId()},
+			},
 		}
 
 		if _, err := js.PublishMsg(ctx, msg); err != nil {

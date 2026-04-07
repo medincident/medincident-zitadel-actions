@@ -30,9 +30,18 @@ func (w *fiberWrapper) Shutdown(ctx context.Context) error {
 
 // ProvideFiberWrapper is a samber/do provider for *fiberWrapper.
 func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
-	cfg := do.MustInvoke[*config.Config](injector)
-	logger := do.MustInvoke[*zerolog.Logger](injector)
-	nc := do.MustInvoke[*nats.Conn](injector)
+	cfg, err := do.Invoke[*config.Config](injector)
+	if err != nil {
+		return nil, err
+	}
+	logger, err := do.Invoke[*zerolog.Logger](injector)
+	if err != nil {
+		return nil, err
+	}
+	nc, err := do.Invoke[*nats.Conn](injector)
+	if err != nil {
+		return nil, err
+	}
 	js, err := do.Invoke[jetstream.JetStream](injector)
 	if err != nil {
 		return nil, err

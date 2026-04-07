@@ -7,6 +7,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
+	"github.com/samber/oops"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 )
@@ -22,12 +23,18 @@ func (w *natsConnWrapper) Shutdown(_ context.Context) error {
 
 // ProvideNatsConnWrapper is a samber/do provider for *natsConnWrapper.
 func ProvideNatsConnWrapper(injector do.Injector) (*natsConnWrapper, error) {
-	cfg := do.MustInvoke[*config.Config](injector)
-	logger := do.MustInvoke[*zerolog.Logger](injector)
+	cfg, err := do.Invoke[*config.Config](injector)
+	if err != nil {
+		return nil, err
+	}
+	logger, err := do.Invoke[*zerolog.Logger](injector)
+	if err != nil {
+		return nil, err
+	}
 
 	nc, err := nats.Connect(cfg.Nats.URL)
 	if err != nil {
-		return nil, err
+		return nil, oops.In("nats").Code("connect_failed").With("url", cfg.Nats.URL).Wrap(err)
 	}
 
 	logger.Info().Str("url", cfg.Nats.URL).Msg("connected to NATS")
