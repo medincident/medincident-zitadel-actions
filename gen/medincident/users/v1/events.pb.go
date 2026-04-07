@@ -278,6 +278,42 @@ func (x *UserEmailChanged) GetEmail() string {
 	return ""
 }
 
+type UserEmailVerified struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserEmailVerified) Reset() {
+	*x = UserEmailVerified{}
+	mi := &file_medincident_users_v1_events_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserEmailVerified) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserEmailVerified) ProtoMessage() {}
+
+func (x *UserEmailVerified) ProtoReflect() protoreflect.Message {
+	mi := &file_medincident_users_v1_events_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserEmailVerified.ProtoReflect.Descriptor instead.
+func (*UserEmailVerified) Descriptor() ([]byte, []int) {
+	return file_medincident_users_v1_events_proto_rawDescGZIP(), []int{4}
+}
+
 type UserLanguageChanged struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	PreferredLanguage string                 `protobuf:"bytes,1,opt,name=preferred_language,json=preferredLanguage,proto3" json:"preferred_language,omitempty"`
@@ -287,7 +323,7 @@ type UserLanguageChanged struct {
 
 func (x *UserLanguageChanged) Reset() {
 	*x = UserLanguageChanged{}
-	mi := &file_medincident_users_v1_events_proto_msgTypes[4]
+	mi := &file_medincident_users_v1_events_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -299,7 +335,7 @@ func (x *UserLanguageChanged) String() string {
 func (*UserLanguageChanged) ProtoMessage() {}
 
 func (x *UserLanguageChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_medincident_users_v1_events_proto_msgTypes[4]
+	mi := &file_medincident_users_v1_events_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -312,7 +348,7 @@ func (x *UserLanguageChanged) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserLanguageChanged.ProtoReflect.Descriptor instead.
 func (*UserLanguageChanged) Descriptor() ([]byte, []int) {
-	return file_medincident_users_v1_events_proto_rawDescGZIP(), []int{4}
+	return file_medincident_users_v1_events_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *UserLanguageChanged) GetPreferredLanguage() string {
@@ -352,7 +388,8 @@ const file_medincident_users_v1_events_proto_rawDesc = "" +
 	"\x11UserGenderChanged\x124\n" +
 	"\x06gender\x18\x01 \x01(\x0e2\x1c.medincident.users.v1.GenderR\x06gender\"(\n" +
 	"\x10UserEmailChanged\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\"D\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"\x13\n" +
+	"\x11UserEmailVerified\"D\n" +
 	"\x13UserLanguageChanged\x12-\n" +
 	"\x12preferred_language\x18\x01 \x01(\tR\x11preferredLanguageb\x06proto3"
 
@@ -368,18 +405,19 @@ func file_medincident_users_v1_events_proto_rawDescGZIP() []byte {
 	return file_medincident_users_v1_events_proto_rawDescData
 }
 
-var file_medincident_users_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_medincident_users_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_medincident_users_v1_events_proto_goTypes = []any{
 	(*UserCreated)(nil),         // 0: medincident.users.v1.UserCreated
 	(*UserNameChanged)(nil),     // 1: medincident.users.v1.UserNameChanged
 	(*UserGenderChanged)(nil),   // 2: medincident.users.v1.UserGenderChanged
 	(*UserEmailChanged)(nil),    // 3: medincident.users.v1.UserEmailChanged
-	(*UserLanguageChanged)(nil), // 4: medincident.users.v1.UserLanguageChanged
-	(Gender)(0),                 // 5: medincident.users.v1.Gender
+	(*UserEmailVerified)(nil),   // 4: medincident.users.v1.UserEmailVerified
+	(*UserLanguageChanged)(nil), // 5: medincident.users.v1.UserLanguageChanged
+	(Gender)(0),                 // 6: medincident.users.v1.Gender
 }
 var file_medincident_users_v1_events_proto_depIdxs = []int32{
-	5, // 0: medincident.users.v1.UserCreated.gender:type_name -> medincident.users.v1.Gender
-	5, // 1: medincident.users.v1.UserGenderChanged.gender:type_name -> medincident.users.v1.Gender
+	6, // 0: medincident.users.v1.UserCreated.gender:type_name -> medincident.users.v1.Gender
+	6, // 1: medincident.users.v1.UserGenderChanged.gender:type_name -> medincident.users.v1.Gender
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -400,7 +438,7 @@ func file_medincident_users_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_medincident_users_v1_events_proto_rawDesc), len(file_medincident_users_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

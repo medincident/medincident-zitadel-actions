@@ -4,15 +4,17 @@ inputs:
     subdir: api/proto
     paths:
       - medincident/events/v1
+      - medincident/sessions/v1
       - medincident/users/v1
 plugins:
   - local:
       - go
       - tool
       - protoc-gen-go
-    out: pkg
+    out: gen
     opt:
       - paths=source_relative
-      - Mmedincident/events/v1/envelope.proto=github.com/medincident/medincident-zitadel-actions/pkg/medincident/events/v1
-      - Mmedincident/users/v1/events.proto=github.com/medincident/medincident-zitadel-actions/pkg/medincident/users/v1
-      - Mmedincident/users/v1/types.proto=github.com/medincident/medincident-zitadel-actions/pkg/medincident/users/v1
+      - Mmedincident/events/v1/envelope.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/events/v1
+      - Mmedincident/sessions/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/sessions/v1
+      - Mmedincident/users/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1
+      - Mmedincident/users/v1/types.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1

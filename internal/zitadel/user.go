@@ -25,3 +25,12 @@ type UserHumanProfileChanged struct {
 	PreferredLanguage *string `json:"preferredLanguage"`
 	Gender            *int    `json:"gender"`
 }
+
+// UserHumanEmailChanged is the payload of the user.human.email.changed Zitadel event.
+type UserHumanEmailChanged struct {
+	Email string `json:"email"`
+}
+
+// UserHumanEmailVerified is the payload of the user.human.email.verified Zitadel event.
+// It is a marker event with no fields.
+type UserHumanEmailVerified struct{}
