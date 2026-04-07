@@ -21,20 +21,14 @@ func (d Duration) MarshalYAML() (any, error) {
 
 func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 	var s string
-	if err := value.Decode(&s); err == nil {
-		parsed, err := time.ParseDuration(s)
-		if err != nil {
-			return fmt.Errorf("invalid duration %q: %w", s, err)
-		}
-		*d = Duration(parsed)
-		return nil
+	if err := value.Decode(&s); err != nil {
+		return fmt.Errorf("cannot decode duration: expected Go duration string (e.g. \"5m\", \"200ms\")")
 	}
 
-	// Fallback: numeric value as nanoseconds.
-	var ns int64
-	if err := value.Decode(&ns); err != nil {
-		return fmt.Errorf("cannot decode duration: expected string or integer")
+	parsed, err := time.ParseDuration(s)
+	if err != nil {
+		return fmt.Errorf("invalid duration %q: %w", s, err)
 	}
-	*d = Duration(ns)
+	*d = Duration(parsed)
 	return nil
 }

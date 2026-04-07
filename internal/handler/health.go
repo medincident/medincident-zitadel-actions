@@ -21,7 +21,7 @@ func HealthCheck(nc *nats.Conn, rc *redis.Client) fiber.Handler {
 		}
 
 		if err := rc.Ping(c.Context()).Err(); err != nil {
-			status["redis"] = err.Error()
+			status["redis"] = "unavailable"
 			degraded = true
 		} else {
 			status["redis"] = "ok"

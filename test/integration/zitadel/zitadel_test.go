@@ -286,6 +286,7 @@ func startService() error {
 			MaxRetries:     3,
 			InitialBackoff: config.Duration(100 * time.Millisecond),
 			MaxBackoff:     config.Duration(1 * time.Second),
+			MaxElapsedTime: config.Duration(5 * time.Second),
 		},
 	}
 

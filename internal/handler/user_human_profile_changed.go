@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"fmt"
-
-	"github.com/go-redsync/redsync/v4"
 	"github.com/gofiber/fiber/v3"
 	"github.com/samber/oops"
 
@@ -31,23 +28,10 @@ func (h *EventHandler) PostHumanUserProfileChanged() fiber.Handler {
 			return c.SendStatus(fiber.StatusOK)
 		}
 
-		mutex := h.rs.NewMutex(
-			fmt.Sprintf("%s%s:%s", h.cfg.Redis.LockPrefix, envelope.AggregateType, envelope.AggregateID),
-			redsync.WithExpiry(h.cfg.Redis.LockExpiry.Duration()),
-		)
-
-		if err := mutex.LockContext(c.Context()); err != nil {
-			return oops.In("handler").Code("lock_failed").With("event_type", "user.human.profile.changed").With("aggregate_id", envelope.AggregateID).Wrap(err)
-		}
-		defer func() {
-			if ok, err := mutex.Unlock(); err != nil {
-				h.logger.Error().Err(err).Str("aggregate_id", envelope.AggregateID).Msg("failed to unlock mutex")
-			} else if !ok {
-				h.logger.Warn().Str("aggregate_id", envelope.AggregateID).Msg("mutex was not unlocked")
-			}
-		}()
-
-		if err := h.pub.Publish(c.Context(), events); err != nil {
+		err = h.withMutex(c.Context(), envelope.AggregateType, envelope.AggregateID, func() error {
+			return h.pub.Publish(c.Context(), events)
+		})
+		if err != nil {
 			return oops.In("handler").Code("publish_failed").With("event_type", "user.human.profile.changed").With("user_id", envelope.UserID).Wrap(err)
 		}
 

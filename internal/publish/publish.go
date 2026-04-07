@@ -52,7 +52,7 @@ func (p *Publisher) Publish(ctx context.Context, events []mapper.MappedEvent) er
 		b := backoff.NewExponentialBackOff()
 		b.InitialInterval = p.cfg.InitialBackoff.Duration()
 		b.MaxInterval = p.cfg.MaxBackoff.Duration()
-		b.MaxElapsedTime = 0
+		b.MaxElapsedTime = p.cfg.MaxElapsedTime.Duration()
 
 		maxRetries := uint64(0)
 		if p.cfg.MaxRetries > 0 {

@@ -40,6 +40,7 @@ type PublishConfig struct {
 	MaxRetries     uint     `yaml:"max_retries"`
 	InitialBackoff Duration `yaml:"initial_backoff"`
 	MaxBackoff     Duration `yaml:"max_backoff"`
+	MaxElapsedTime Duration `yaml:"max_elapsed_time"`
 }
 
 func defaultConfig() Config {
@@ -60,6 +61,7 @@ func defaultConfig() Config {
 			MaxRetries:     5,
 			InitialBackoff: Duration(200 * time.Millisecond),
 			MaxBackoff:     Duration(5 * time.Second),
+			MaxElapsedTime: Duration(8 * time.Second),
 		},
 		Zerolog: ZerologConfig{
 			Level:      "info",

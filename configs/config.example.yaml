@@ -64,6 +64,10 @@ publish:
   # Default: 5s
   # max_backoff: 5s
 
+  # Maximum total time for all retry attempts. Must be less than HTTP write timeout (10s).
+  # Default: 8s
+  # max_elapsed_time: 8s
+
 zerolog:
   # Global minimum log level.
   # Accepted values: trace | debug | info | warn | error | fatal | panic
