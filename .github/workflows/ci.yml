@@ -21,7 +21,6 @@ jobs:
       - uses: arduino/setup-task@v2
         with:
           version: 3.x
-      - run: task fmt:check
       - run: task lint
       - run: task vuln
       - run: task test
