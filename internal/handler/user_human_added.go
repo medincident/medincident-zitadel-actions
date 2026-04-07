@@ -19,9 +19,12 @@ func PostHumanUserAdded(logger *zerolog.Logger, js jetstream.JetStream) fiber.Ha
 			return oops.In("handler").Code("bind_failed").With("event_type", "user.human.added").Wrap(err)
 		}
 
-		events := mapper.MapUserHumanAdded(envelope)
+		events, err := mapper.MapUserHumanAdded(envelope)
+		if err != nil {
+			return oops.In("handler").Code("map_failed").With("event_type", "user.human.added").With("user_id", envelope.UserID).Wrap(err)
+		}
 
-		if err := publish.PublishEvents(c.Context(), js, events, envelope.UserID); err != nil {
+		if err := publish.PublishEvents(c.Context(), js, events); err != nil {
 			return oops.In("handler").Code("publish_failed").With("event_type", "user.human.added").With("user_id", envelope.UserID).Wrap(err)
 		}
 

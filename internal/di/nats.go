@@ -17,8 +17,7 @@ type natsConnWrapper struct {
 }
 
 func (w *natsConnWrapper) Shutdown(_ context.Context) error {
-	w.conn.Close()
-	return nil
+	return w.conn.Drain()
 }
 
 // ProvideNatsConnWrapper is a samber/do provider for *natsConnWrapper.

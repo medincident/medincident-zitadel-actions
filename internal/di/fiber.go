@@ -11,6 +11,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
+	"github.com/samber/oops"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 	"github.com/medincident/medincident-zitadel-actions/internal/handler"
@@ -70,16 +71,27 @@ func errorHandler(logger *zerolog.Logger) fiber.ErrorHandler {
 			})
 		}
 
-		// Log internal errors with full context.
-		logger.Error().
-			Str("method", c.Method()).
-			Str("path", c.Path()).
-			Err(err).
-			Msg("internal error")
+		// Log internal errors with oops context for debugging.
+		if oopsErr, ok := oops.AsOops(err); ok {
+			logger.Error().
+				Str("method", c.Method()).
+				Str("path", c.Path()).
+				Any("oops_code", oopsErr.Code()).
+				Str("oops_domain", oopsErr.Domain()).
+				Any("oops_context", oopsErr.Context()).
+				Str("stacktrace", oopsErr.Stacktrace()).
+				Err(err).
+				Msg("internal error")
+		} else {
+			logger.Error().
+				Str("method", c.Method()).
+				Str("path", c.Path()).
+				Err(err).
+				Msg("internal error")
+		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "internal server error",
-		})
+		// Never leak internals to the client.
+		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 }
 

@@ -19,7 +19,10 @@ func PostHumanUserProfileChanged(logger *zerolog.Logger, js jetstream.JetStream)
 			return oops.In("handler").Code("bind_failed").With("event_type", "user.human.profile.changed").Wrap(err)
 		}
 
-		events := mapper.MapUserHumanProfileChanged(envelope)
+		events, err := mapper.MapUserHumanProfileChanged(envelope)
+		if err != nil {
+			return oops.In("handler").Code("map_failed").With("event_type", "user.human.profile.changed").With("user_id", envelope.UserID).Wrap(err)
+		}
 
 		if len(events) == 0 {
 			logger.Debug().
@@ -28,7 +31,7 @@ func PostHumanUserProfileChanged(logger *zerolog.Logger, js jetstream.JetStream)
 			return c.SendStatus(fiber.StatusOK)
 		}
 
-		if err := publish.PublishEvents(c.Context(), js, events, envelope.UserID); err != nil {
+		if err := publish.PublishEvents(c.Context(), js, events); err != nil {
 			return oops.In("handler").Code("publish_failed").With("event_type", "user.human.profile.changed").With("user_id", envelope.UserID).Wrap(err)
 		}
 
