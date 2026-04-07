@@ -41,9 +41,13 @@ redis:
   # Default: 0
   # db: 0
 
-  # Key prefix used for distributed idempotency locks.
+  # Key prefix for distributed mutexes that enforce per-aggregate ordering during publish.
   # Default: medincident:lock:
   # lock_prefix: medincident:lock:
+
+  # TTL for distributed locks. Should cover the worst-case publish retry window.
+  # Default: 30s
+  # lock_expiry: 30s
 
 # NATS JetStream publish retry settings.
 publish:

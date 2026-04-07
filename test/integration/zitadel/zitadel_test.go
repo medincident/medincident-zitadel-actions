@@ -270,17 +270,21 @@ func startService() error {
 	rc := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 	})
+	cleanupFuncs = append(cleanupFuncs, func() {
+		_ = rc.Close()
+	})
 	pool := goredis.NewPool(rc)
 	rs := redsync.New(pool)
 
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
 			LockPrefix: "test:lock:",
+			LockExpiry: config.Duration(30 * time.Second),
 		},
 		Publish: config.PublishConfig{
 			MaxRetries:     3,
-			InitialBackoff: 100 * time.Millisecond,
-			MaxBackoff:     1 * time.Second,
+			InitialBackoff: config.Duration(100 * time.Millisecond),
+			MaxBackoff:     config.Duration(1 * time.Second),
 		},
 	}
 

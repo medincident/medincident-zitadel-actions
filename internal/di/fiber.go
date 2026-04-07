@@ -70,7 +70,7 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	app.Get("/health", handler.HealthCheck(nc, rc))
 
 	// POST routes with ContentType + HMAC middleware.
-	post := app.Group("", middleware.ContentType(), middleware.HMACVerify(cfg.SigningKey, cfg.SigningKeyTolerance))
+	post := app.Group("", middleware.ContentType(), middleware.HMACVerify(cfg.SigningKey, cfg.SigningKeyTolerance.Duration()))
 
 	post.Post("/debug", handler.PostDebugWebhook(logger))
 	post.Post("/events/user/human/added", handler.PostHumanUserAdded(logger, js, rs, cfg))

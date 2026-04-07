@@ -34,7 +34,7 @@ func ProvideNatsConnWrapper(injector do.Injector) (*natsConnWrapper, error) {
 
 	nc, err := nats.Connect(cfg.Nats.URL,
 		nats.MaxReconnects(cfg.Nats.MaxReconnects),
-		nats.ReconnectWait(cfg.Nats.ReconnectWait),
+		nats.ReconnectWait(cfg.Nats.ReconnectWait.Duration()),
 		nats.DisconnectErrHandler(func(_ *nats.Conn, err error) {
 			logger.Warn().Err(err).Msg("nats disconnected")
 		}),

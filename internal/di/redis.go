@@ -38,6 +38,7 @@ func ProvideRedisClientWrapper(injector do.Injector) (*redisClientWrapper, error
 	})
 
 	if err := client.Ping(context.Background()).Err(); err != nil {
+		_ = client.Close()
 		return nil, oops.In("redis").Code("connect_failed").With("address", cfg.Redis.Address).Wrap(err)
 	}
 

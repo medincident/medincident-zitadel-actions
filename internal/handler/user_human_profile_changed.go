@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/go-redsync/redsync/v4"
 	"github.com/gofiber/fiber/v3"
@@ -38,13 +37,19 @@ func PostHumanUserProfileChanged(logger *zerolog.Logger, js jetstream.JetStream,
 
 		mutex := rs.NewMutex(
 			fmt.Sprintf("%s%s:%s", cfg.Redis.LockPrefix, envelope.AggregateType, envelope.AggregateID),
-			redsync.WithExpiry(30*time.Second),
+			redsync.WithExpiry(cfg.Redis.LockExpiry.Duration()),
 		)
 
 		if err := mutex.LockContext(c.Context()); err != nil {
 			return oops.In("handler").Code("lock_failed").With("event_type", "user.human.profile.changed").With("aggregate_id", envelope.AggregateID).Wrap(err)
 		}
-		defer func() { _, _ = mutex.Unlock() }()
+		defer func() {
+			if ok, err := mutex.Unlock(); err != nil {
+				logger.Error().Err(err).Str("aggregate_id", envelope.AggregateID).Msg("failed to unlock mutex")
+			} else if !ok {
+				logger.Warn().Str("aggregate_id", envelope.AggregateID).Msg("mutex was not unlocked")
+			}
+		}()
 
 		if err := publish.PublishEvents(c.Context(), logger, js, cfg.Publish, events); err != nil {
 			return oops.In("handler").Code("publish_failed").With("event_type", "user.human.profile.changed").With("user_id", envelope.UserID).Wrap(err)

@@ -12,7 +12,7 @@ import (
 type Config struct {
 	Address             string        `yaml:"address"`
 	SigningKey          string        `yaml:"signing_key"`
-	SigningKeyTolerance time.Duration `yaml:"signing_key_tolerance"`
+	SigningKeyTolerance Duration      `yaml:"signing_key_tolerance"`
 	Nats                NatsConfig    `yaml:"nats"`
 	Redis               RedisConfig   `yaml:"redis"`
 	Publish             PublishConfig `yaml:"publish"`
@@ -21,43 +21,45 @@ type Config struct {
 
 // NatsConfig holds NATS connection settings.
 type NatsConfig struct {
-	URL           string        `yaml:"url"`
-	MaxReconnects int           `yaml:"max_reconnects"`
-	ReconnectWait time.Duration `yaml:"reconnect_wait"`
+	URL           string   `yaml:"url"`
+	MaxReconnects int      `yaml:"max_reconnects"`
+	ReconnectWait Duration `yaml:"reconnect_wait"`
 }
 
 // RedisConfig holds Redis connection and distributed lock settings.
 type RedisConfig struct {
-	Address    string `yaml:"address"`
-	Password   string `yaml:"password"`
-	DB         int    `yaml:"db"`
-	LockPrefix string `yaml:"lock_prefix"`
+	Address    string   `yaml:"address"`
+	Password   string   `yaml:"password"`
+	DB         int      `yaml:"db"`
+	LockPrefix string   `yaml:"lock_prefix"`
+	LockExpiry Duration `yaml:"lock_expiry"`
 }
 
 // PublishConfig holds NATS JetStream publish retry settings.
 type PublishConfig struct {
-	MaxRetries     uint          `yaml:"max_retries"`
-	InitialBackoff time.Duration `yaml:"initial_backoff"`
-	MaxBackoff     time.Duration `yaml:"max_backoff"`
+	MaxRetries     uint     `yaml:"max_retries"`
+	InitialBackoff Duration `yaml:"initial_backoff"`
+	MaxBackoff     Duration `yaml:"max_backoff"`
 }
 
 func defaultConfig() Config {
 	return Config{
 		Address:             ":8080",
-		SigningKeyTolerance: 5 * time.Minute,
+		SigningKeyTolerance: Duration(5 * time.Minute),
 		Nats: NatsConfig{
 			URL:           "nats://localhost:4222",
 			MaxReconnects: -1,
-			ReconnectWait: 2 * time.Second,
+			ReconnectWait: Duration(2 * time.Second),
 		},
 		Redis: RedisConfig{
 			Address:    "localhost:6379",
 			LockPrefix: "medincident:lock:",
+			LockExpiry: Duration(30 * time.Second),
 		},
 		Publish: PublishConfig{
 			MaxRetries:     5,
-			InitialBackoff: 200 * time.Millisecond,
-			MaxBackoff:     5 * time.Second,
+			InitialBackoff: Duration(200 * time.Millisecond),
+			MaxBackoff:     Duration(5 * time.Second),
 		},
 		Zerolog: ZerologConfig{
 			Level:      "info",

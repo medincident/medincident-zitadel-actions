@@ -38,8 +38,8 @@ func PublishEvents(ctx context.Context, logger *zerolog.Logger, js jetstream.Jet
 		}
 
 		b := backoff.NewExponentialBackOff()
-		b.InitialInterval = cfg.InitialBackoff
-		b.MaxInterval = cfg.MaxBackoff
+		b.InitialInterval = cfg.InitialBackoff.Duration()
+		b.MaxInterval = cfg.MaxBackoff.Duration()
 		b.MaxElapsedTime = 0
 
 		maxRetries := uint64(0)
