@@ -32,7 +32,16 @@ func ProvideNatsConnWrapper(injector do.Injector) (*natsConnWrapper, error) {
 		return nil, err
 	}
 
-	nc, err := nats.Connect(cfg.Nats.URL)
+	nc, err := nats.Connect(cfg.Nats.URL,
+		nats.MaxReconnects(cfg.Nats.MaxReconnects),
+		nats.ReconnectWait(cfg.Nats.ReconnectWait.Duration()),
+		nats.DisconnectErrHandler(func(_ *nats.Conn, err error) {
+			logger.Warn().Err(err).Msg("nats disconnected")
+		}),
+		nats.ReconnectHandler(func(_ *nats.Conn) {
+			logger.Info().Msg("nats reconnected")
+		}),
+	)
 	if err != nil {
 		return nil, oops.In("nats").Code("connect_failed").With("url", cfg.Nats.URL).Wrap(err)
 	}

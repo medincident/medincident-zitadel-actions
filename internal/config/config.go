@@ -10,22 +10,58 @@ import (
 
 // Config is the root application configuration.
 type Config struct {
-	Address    string        `yaml:"address"`
-	SigningKey string        `yaml:"signing_key"`
-	Nats       NatsConfig    `yaml:"nats"`
-	Zerolog    ZerologConfig `yaml:"zerolog"`
+	Address             string        `yaml:"address"`
+	SigningKey          string        `yaml:"signing_key"`
+	SigningKeyTolerance Duration      `yaml:"signing_key_tolerance"`
+	Nats                NatsConfig    `yaml:"nats"`
+	Redis               RedisConfig   `yaml:"redis"`
+	Publish             PublishConfig `yaml:"publish"`
+	Zerolog             ZerologConfig `yaml:"zerolog"`
 }
 
 // NatsConfig holds NATS connection settings.
 type NatsConfig struct {
-	URL string `yaml:"url"`
+	URL           string   `yaml:"url"`
+	MaxReconnects int      `yaml:"max_reconnects"`
+	ReconnectWait Duration `yaml:"reconnect_wait"`
+}
+
+// RedisConfig holds Redis connection and distributed lock settings.
+type RedisConfig struct {
+	Address    string   `yaml:"address"`
+	Password   string   `yaml:"password"`
+	DB         int      `yaml:"db"`
+	LockPrefix string   `yaml:"lock_prefix"`
+	LockExpiry Duration `yaml:"lock_expiry"`
+}
+
+// PublishConfig holds NATS JetStream publish retry settings.
+type PublishConfig struct {
+	MaxRetries     uint     `yaml:"max_retries"`
+	InitialBackoff Duration `yaml:"initial_backoff"`
+	MaxBackoff     Duration `yaml:"max_backoff"`
+	MaxElapsedTime Duration `yaml:"max_elapsed_time"`
 }
 
 func defaultConfig() Config {
 	return Config{
-		Address: ":8080",
+		Address:             ":8080",
+		SigningKeyTolerance: Duration(5 * time.Minute),
 		Nats: NatsConfig{
-			URL: "nats://localhost:4222",
+			URL:           "nats://localhost:4222",
+			MaxReconnects: -1,
+			ReconnectWait: Duration(2 * time.Second),
+		},
+		Redis: RedisConfig{
+			Address:    "localhost:6379",
+			LockPrefix: "medincident:lock:",
+			LockExpiry: Duration(30 * time.Second),
+		},
+		Publish: PublishConfig{
+			MaxRetries:     5,
+			InitialBackoff: Duration(200 * time.Millisecond),
+			MaxBackoff:     Duration(5 * time.Second),
+			MaxElapsedTime: Duration(8 * time.Second),
 		},
 		Zerolog: ZerologConfig{
 			Level:      "info",

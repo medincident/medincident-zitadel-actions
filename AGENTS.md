@@ -10,7 +10,7 @@ HTTP gateway: **Zitadel Actions v2 → NATS JetStream**, written in Go 1.26.1.
 cmd/server/main.go                          — entry point, graceful shutdown
 internal/
   config/                                   — YAML config types + reader
-  di/                                       — samber/do providers (container, zerolog, fiber, nats)
+  di/                                       — samber/do providers (container, zerolog, fiber, nats, redis)
   handler/                                  — HTTP handlers for all Zitadel webhook endpoints
   mapper/                                   — Zitadel → proto event mappers
   middleware/                               — Fiber middleware (ContentType, HMAC)
@@ -40,6 +40,9 @@ test/integration/zitadel/                   — integration tests (testcontainer
 | `google.golang.org/protobuf/cmd/protoc-gen-go` (go tool) | Proto → Go codegen |
 | `github.com/abice/go-enum` (go tool) | Go enum codegen |
 | `github.com/testcontainers/testcontainers-go` | Integration test containers |
+| `github.com/cenkalti/backoff/v4` | Exponential backoff retry |
+| `github.com/go-redsync/redsync/v4` | Distributed mutex (Redlock) |
+| `github.com/redis/go-redis/v9` | Redis client |
 | `github.com/stretchr/testify` | Test assertions |
 
 ---
@@ -167,10 +170,11 @@ Run: `task test:integration` (requires Docker).
 
 ---
 
-## What is not done yet (TODO.md)
+## What is not done yet (TODO)
 
-- Rate limiting middleware
 - Handlers for `/user/email`, `/user/idp`
+- Prometheus metrics endpoint
+- Request ID middleware
 - Unit tests for `Envelope[T]`
 - Makefile (`build` / `run` targets)
 - TLS termination strategy
