@@ -71,6 +71,8 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	post.Post("/events/user/human/profile/changed", eh.PostHumanUserProfileChanged())
 	post.Post("/events/user/human/email/changed", eh.PostHumanUserEmailChanged())
 	post.Post("/events/user/human/email/verified", eh.PostHumanUserEmailVerified())
+	post.Post("/events/session/added", eh.PostSessionAdded())
+	post.Post("/events/session/user/checked", eh.PostSessionUserChecked())
 
 	return &fiberWrapper{app: app}, nil
 }

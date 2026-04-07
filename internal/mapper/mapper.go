@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	eventsv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/events/v1"
+	sessionsv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/sessions/v1"
 	usersv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
@@ -111,6 +112,43 @@ func MapUserEmailVerified(envelope *zitadel.Envelope[zitadel.UserHumanEmailVerif
 	return []MappedEvent{event}, nil
 }
 
+// MapSessionAdded converts a Zitadel session.added event into a domain proto event.
+func MapSessionAdded(envelope *zitadel.Envelope[zitadel.SessionAdded]) ([]MappedEvent, error) {
+	p := &envelope.EventPayload
+
+	msg := &sessionsv1.SessionCreated{}
+	if p.UserAgent != nil {
+		if p.UserAgent.FingerprintID != nil {
+			msg.FingerprintId = *p.UserAgent.FingerprintID
+		}
+		msg.IpAddress = p.UserAgent.IP
+		if p.UserAgent.Description != nil {
+			msg.UserAgent = *p.UserAgent.Description
+		}
+	}
+
+	event, err := newSessionMappedEvent("medincident.sessions.v1.created", envelope.AggregateID, envelope.Sequence, envelope.CreatedAt, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return []MappedEvent{event}, nil
+}
+
+// MapSessionUserChecked converts a Zitadel session.user.checked event into a domain proto event.
+func MapSessionUserChecked(envelope *zitadel.Envelope[zitadel.SessionUserChecked]) ([]MappedEvent, error) {
+	p := &envelope.EventPayload
+
+	event, err := newSessionMappedEvent("medincident.sessions.v1.user_checked", envelope.AggregateID, envelope.Sequence, envelope.CreatedAt, &sessionsv1.SessionUserChecked{
+		UserId: p.UserID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return []MappedEvent{event}, nil
+}
+
 // deterministicEventID builds a UUID v5 from the Zitadel aggregate ID, sequence,
 // and target NATS subject. This ensures the same source event always produces
 // the same event ID — even when one Zitadel event fans out into multiple
@@ -134,6 +172,25 @@ func newUserMappedEvent(subject, aggregateID string, sequence uint64, occurredAt
 			OccurredAt:    timestamppb.New(occurredAt),
 			AggregateType: "user",
 			AggregateId:   userID,
+			Payload:       pb,
+		},
+	}, nil
+}
+
+// newSessionMappedEvent constructs a MappedEvent for session-aggregate events.
+func newSessionMappedEvent(subject, aggregateID string, sequence uint64, occurredAt time.Time, payload proto.Message) (MappedEvent, error) {
+	pb, err := anypb.New(payload)
+	if err != nil {
+		return MappedEvent{}, err
+	}
+
+	return MappedEvent{
+		Subject: subject,
+		Envelope: &eventsv1.Envelope{
+			EventId:       deterministicEventID(aggregateID, sequence, subject),
+			OccurredAt:    timestamppb.New(occurredAt),
+			AggregateType: "session",
+			AggregateId:   aggregateID,
 			Payload:       pb,
 		},
 	}, nil

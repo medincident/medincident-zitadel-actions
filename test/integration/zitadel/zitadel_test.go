@@ -36,6 +36,7 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 	eventsv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/events/v1"
+	sessionsv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/sessions/v1"
 	usersv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1"
 )
 
@@ -48,8 +49,10 @@ var (
 	debugCh          = make(chan []byte, 10)
 	userAddedCh      = make(chan []byte, 10)
 	profileChangedCh = make(chan []byte, 10)
-	emailChangedCh   = make(chan []byte, 10)
-	emailVerifiedCh  = make(chan []byte, 10)
+	emailChangedCh      = make(chan []byte, 10)
+	emailVerifiedCh     = make(chan []byte, 10)
+	sessionAddedCh      = make(chan []byte, 10)
+	sessionUserCheckedCh = make(chan []byte, 10)
 
 	natsConn  *nats.Conn
 	js        jetstream.JetStream
@@ -314,6 +317,10 @@ func startService() error {
 				trySend(emailChangedCh, body)
 			case "/events/user/human/email/verified":
 				trySend(emailVerifiedCh, body)
+			case "/events/session/added":
+				trySend(sessionAddedCh, body)
+			case "/events/session/user/checked":
+				trySend(sessionUserCheckedCh, body)
 			}
 		}
 		return err
@@ -333,6 +340,8 @@ func startService() error {
 	post.Post("/events/user/human/profile/changed", eh.PostHumanUserProfileChanged())
 	post.Post("/events/user/human/email/changed", eh.PostHumanUserEmailChanged())
 	post.Post("/events/user/human/email/verified", eh.PostHumanUserEmailVerified())
+	post.Post("/events/session/added", eh.PostSessionAdded())
+	post.Post("/events/session/user/checked", eh.PostSessionUserChecked())
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -539,6 +548,23 @@ func verifyEmail(userID, code string) error {
 		"verificationCode": code,
 	})
 	return err
+}
+
+func createSession(userID string) (string, error) {
+	resp, err := zitadelAPI("POST", "/v2/sessions", map[string]any{
+		"checks": map[string]any{
+			"user": map[string]any{
+				"userId": userID,
+			},
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("create session: %w", err)
+	}
+	if id, ok := resp["sessionId"].(string); ok && id != "" {
+		return id, nil
+	}
+	return "", fmt.Errorf("no sessionId in response: %v", resp)
 }
 
 func waitForBody(t *testing.T, ch <-chan []byte, timeout time.Duration) []byte {
@@ -800,6 +826,95 @@ func TestUserHumanEmailVerified(t *testing.T) {
 	// Unpack the payload — UserEmailVerified has no fields, just verify it deserializes.
 	var emailVerified usersv1.UserEmailVerified
 	require.NoError(t, natsEnvelope.GetPayload().UnmarshalTo(&emailVerified), "unmarshal UserEmailVerified from NATS payload")
+}
+
+func TestSessionAdded(t *testing.T) {
+	drainChannel(sessionAddedCh)
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/events/session/added", servicePort)
+
+	tid, err := createTarget("session-added-"+suffix, endpoint)
+	require.NoError(t, err, "create target")
+
+	err = setExecution(map[string]any{"event": map[string]any{"event": "session.added"}}, tid)
+	require.NoError(t, err, "set execution")
+
+	time.Sleep(3 * time.Second)
+
+	email := fmt.Sprintf("test-%s@example.com", suffix)
+	userID, err := createUser("Session", "Test", email)
+	require.NoError(t, err, "create user")
+
+	time.Sleep(time.Second)
+
+	_, err = createSession(userID)
+	require.NoError(t, err, "create session")
+
+	// Verify webhook received.
+	body := waitForBody(t, sessionAddedCh, 30*time.Second)
+
+	var envelope zitadel.Envelope[zitadel.SessionAdded]
+	require.NoError(t, json.Unmarshal(body, &envelope), "unmarshal envelope")
+
+	assert.Equal(t, "session.added", envelope.EventType)
+	assert.Equal(t, "session", envelope.AggregateType)
+
+	// Verify NATS message published.
+	natsEnvelope := fetchNATSMessage(t, "medincident.sessions.v1.created", 30*time.Second)
+
+	assert.Equal(t, "session", natsEnvelope.GetAggregateType())
+	assert.NotEmpty(t, natsEnvelope.GetEventId())
+	assert.NotNil(t, natsEnvelope.GetOccurredAt())
+	assert.NotEmpty(t, natsEnvelope.GetAggregateId())
+
+	var sessionCreated sessionsv1.SessionCreated
+	require.NoError(t, natsEnvelope.GetPayload().UnmarshalTo(&sessionCreated), "unmarshal SessionCreated from NATS payload")
+}
+
+func TestSessionUserChecked(t *testing.T) {
+	drainChannel(sessionUserCheckedCh)
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/events/session/user/checked", servicePort)
+
+	tid, err := createTarget("session-user-checked-"+suffix, endpoint)
+	require.NoError(t, err, "create target")
+
+	err = setExecution(map[string]any{"event": map[string]any{"event": "session.user.checked"}}, tid)
+	require.NoError(t, err, "set execution")
+
+	time.Sleep(3 * time.Second)
+
+	email := fmt.Sprintf("test-%s@example.com", suffix)
+	userID, err := createUser("SessionUser", "Test", email)
+	require.NoError(t, err, "create user")
+
+	time.Sleep(time.Second)
+
+	_, err = createSession(userID)
+	require.NoError(t, err, "create session")
+
+	// Verify webhook received.
+	body := waitForBody(t, sessionUserCheckedCh, 30*time.Second)
+
+	var envelope zitadel.Envelope[zitadel.SessionUserChecked]
+	require.NoError(t, json.Unmarshal(body, &envelope), "unmarshal envelope")
+
+	assert.Equal(t, "session.user.checked", envelope.EventType)
+	assert.Equal(t, userID, envelope.EventPayload.UserID)
+
+	// Verify NATS message published.
+	natsEnvelope := fetchNATSMessage(t, "medincident.sessions.v1.user_checked", 30*time.Second)
+
+	assert.Equal(t, "session", natsEnvelope.GetAggregateType())
+	assert.NotEmpty(t, natsEnvelope.GetEventId())
+	assert.NotNil(t, natsEnvelope.GetOccurredAt())
+	assert.NotEmpty(t, natsEnvelope.GetAggregateId())
+
+	var userChecked sessionsv1.SessionUserChecked
+	require.NoError(t, natsEnvelope.GetPayload().UnmarshalTo(&userChecked), "unmarshal SessionUserChecked from NATS payload")
+	assert.Equal(t, userID, userChecked.GetUserId())
 }
 
 func TestDebugWebhook(t *testing.T) {

@@ -18,6 +18,9 @@ internal/
   zitadel/                                  — Envelope[T], event payload structs
 buf.gen.yaml                                — buf codegen config (remote git_repo input)
 gen/                                        — buf-generated Go code (import from here)
+  medincident/events/v1/                     — event envelope proto
+  medincident/sessions/v1/                   — session event protos
+  medincident/users/v1/                      — user event + type protos
 configs/config.example.yaml                — annotated config reference
 test/integration/zitadel/                   — integration tests (testcontainers-go)
   data/                                     — Zitadel config & steps YAML for tests
@@ -144,7 +147,7 @@ envelope.EventPayload.FirstName
 
 Proto source lives in `github.com/medincident/medincident-proto` (remote repo).
 `buf.gen.yaml` in project root fetches protos via `git_repo` input and generates Go code into `pkg/`.
-Generated packages: `pkg/medincident/events/v1/` and `pkg/medincident/users/v1/`.
+Generated packages: `gen/medincident/events/v1/`, `gen/medincident/sessions/v1/`, and `gen/medincident/users/v1/`.
 Run `task generate` to regenerate.
 
 ---
@@ -154,7 +157,7 @@ Run `task generate` to regenerate.
 1. Zitadel webhook → handler binds `Envelope[T]`
 2. Handler calls mapper (`internal/mapper/`) → `[]MappedEvent` (subject + proto message)
 3. Handler calls `publish.PublishEvents()` → wraps in `eventsv1.Envelope` with `google.protobuf.Any`, publishes to NATS JetStream
-4. NATS subjects: `medincident.users.v1.created`, `medincident.users.v1.name_changed`, etc.
+4. NATS subjects: `medincident.users.v1.created`, `medincident.users.v1.name_changed`, `medincident.sessions.v1.created`, etc.
 
 Profile changes are split into sub-events based on which fields are non-nil (pointer detection).
 

@@ -358,82 +358,6 @@ func (x *UserLanguageChanged) GetPreferredLanguage() string {
 	return ""
 }
 
-type UserAuthenticated struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	IpAddress     string                 `protobuf:"bytes,2,opt,name=ip_address,json=ipAddress,proto3" json:"ip_address,omitempty"`
-	UserAgent     string                 `protobuf:"bytes,3,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
-	FingerprintId string                 `protobuf:"bytes,4,opt,name=fingerprint_id,json=fingerprintId,proto3" json:"fingerprint_id,omitempty"`
-	ClientId      string                 `protobuf:"bytes,5,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UserAuthenticated) Reset() {
-	*x = UserAuthenticated{}
-	mi := &file_medincident_users_v1_events_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UserAuthenticated) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UserAuthenticated) ProtoMessage() {}
-
-func (x *UserAuthenticated) ProtoReflect() protoreflect.Message {
-	mi := &file_medincident_users_v1_events_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UserAuthenticated.ProtoReflect.Descriptor instead.
-func (*UserAuthenticated) Descriptor() ([]byte, []int) {
-	return file_medincident_users_v1_events_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *UserAuthenticated) GetSessionId() string {
-	if x != nil {
-		return x.SessionId
-	}
-	return ""
-}
-
-func (x *UserAuthenticated) GetIpAddress() string {
-	if x != nil {
-		return x.IpAddress
-	}
-	return ""
-}
-
-func (x *UserAuthenticated) GetUserAgent() string {
-	if x != nil {
-		return x.UserAgent
-	}
-	return ""
-}
-
-func (x *UserAuthenticated) GetFingerprintId() string {
-	if x != nil {
-		return x.FingerprintId
-	}
-	return ""
-}
-
-func (x *UserAuthenticated) GetClientId() string {
-	if x != nil {
-		return x.ClientId
-	}
-	return ""
-}
-
 var File_medincident_users_v1_events_proto protoreflect.FileDescriptor
 
 const file_medincident_users_v1_events_proto_rawDesc = "" +
@@ -467,16 +391,7 @@ const file_medincident_users_v1_events_proto_rawDesc = "" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"\x13\n" +
 	"\x11UserEmailVerified\"D\n" +
 	"\x13UserLanguageChanged\x12-\n" +
-	"\x12preferred_language\x18\x01 \x01(\tR\x11preferredLanguage\"\xb4\x01\n" +
-	"\x11UserAuthenticated\x12\x1d\n" +
-	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1d\n" +
-	"\n" +
-	"ip_address\x18\x02 \x01(\tR\tipAddress\x12\x1d\n" +
-	"\n" +
-	"user_agent\x18\x03 \x01(\tR\tuserAgent\x12%\n" +
-	"\x0efingerprint_id\x18\x04 \x01(\tR\rfingerprintId\x12\x1b\n" +
-	"\tclient_id\x18\x05 \x01(\tR\bclientIdb\x06proto3"
+	"\x12preferred_language\x18\x01 \x01(\tR\x11preferredLanguageb\x06proto3"
 
 var (
 	file_medincident_users_v1_events_proto_rawDescOnce sync.Once
@@ -490,7 +405,7 @@ func file_medincident_users_v1_events_proto_rawDescGZIP() []byte {
 	return file_medincident_users_v1_events_proto_rawDescData
 }
 
-var file_medincident_users_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_medincident_users_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_medincident_users_v1_events_proto_goTypes = []any{
 	(*UserCreated)(nil),         // 0: medincident.users.v1.UserCreated
 	(*UserNameChanged)(nil),     // 1: medincident.users.v1.UserNameChanged
@@ -498,12 +413,11 @@ var file_medincident_users_v1_events_proto_goTypes = []any{
 	(*UserEmailChanged)(nil),    // 3: medincident.users.v1.UserEmailChanged
 	(*UserEmailVerified)(nil),   // 4: medincident.users.v1.UserEmailVerified
 	(*UserLanguageChanged)(nil), // 5: medincident.users.v1.UserLanguageChanged
-	(*UserAuthenticated)(nil),   // 6: medincident.users.v1.UserAuthenticated
-	(Gender)(0),                 // 7: medincident.users.v1.Gender
+	(Gender)(0),                 // 6: medincident.users.v1.Gender
 }
 var file_medincident_users_v1_events_proto_depIdxs = []int32{
-	7, // 0: medincident.users.v1.UserCreated.gender:type_name -> medincident.users.v1.Gender
-	7, // 1: medincident.users.v1.UserGenderChanged.gender:type_name -> medincident.users.v1.Gender
+	6, // 0: medincident.users.v1.UserCreated.gender:type_name -> medincident.users.v1.Gender
+	6, // 1: medincident.users.v1.UserGenderChanged.gender:type_name -> medincident.users.v1.Gender
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -524,7 +438,7 @@ func file_medincident_users_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_medincident_users_v1_events_proto_rawDesc), len(file_medincident_users_v1_events_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

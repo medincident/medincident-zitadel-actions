@@ -4,6 +4,7 @@ inputs:
     subdir: api/proto
     paths:
       - medincident/events/v1
+      - medincident/sessions/v1
       - medincident/users/v1
 plugins:
   - local:
@@ -14,5 +15,6 @@ plugins:
     opt:
       - paths=source_relative
       - Mmedincident/events/v1/envelope.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/events/v1
+      - Mmedincident/sessions/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/sessions/v1
       - Mmedincident/users/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1
       - Mmedincident/users/v1/types.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1
