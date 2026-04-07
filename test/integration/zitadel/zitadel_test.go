@@ -17,15 +17,21 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	tcnetwork "github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/handler"
+	"github.com/medincident/medincident-zitadel-actions/internal/middleware"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
+	eventsv1 "github.com/medincident/medincident-zitadel-actions/pkg/medincident/events/v1"
+	usersv1 "github.com/medincident/medincident-zitadel-actions/pkg/medincident/users/v1"
 )
 
 // Package-level state shared across all tests.
@@ -34,11 +40,12 @@ var (
 	pat            string
 	servicePort    int
 
-	eventCh          = make(chan []byte, 10)
-	requestCh        = make(chan []byte, 10)
-	responseCh       = make(chan []byte, 10)
+	debugCh          = make(chan []byte, 10)
 	userAddedCh      = make(chan []byte, 10)
 	profileChangedCh = make(chan []byte, 10)
+
+	natsConn *nats.Conn
+	js       jetstream.JetStream
 
 	cleanupFuncs []func()
 )
@@ -102,12 +109,64 @@ func setup(ctx context.Context) error {
 		_ = pgContainer.Terminate(context.Background())
 	})
 
-	// 3. Our service (in-process)
+	// 3. NATS with JetStream
+	natsContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "nats:2-alpine",
+			Cmd:          []string{"-js"},
+			ExposedPorts: []string{"4222/tcp"},
+			WaitingFor: wait.ForListeningPort("4222/tcp").
+				WithStartupTimeout(30 * time.Second),
+		},
+		Started: true,
+	})
+	if err != nil {
+		return fmt.Errorf("start nats: %w", err)
+	}
+	cleanupFuncs = append(cleanupFuncs, func() {
+		_ = natsContainer.Terminate(context.Background())
+	})
+
+	natsMappedPort, err := natsContainer.MappedPort(ctx, "4222/tcp")
+	if err != nil {
+		return fmt.Errorf("get nats mapped port: %w", err)
+	}
+	natsHost, err := natsContainer.Host(ctx)
+	if err != nil {
+		return fmt.Errorf("get nats host: %w", err)
+	}
+	natsURL := fmt.Sprintf("nats://%s:%s", natsHost, natsMappedPort.Port())
+
+	natsConn, err = nats.Connect(natsURL)
+	if err != nil {
+		return fmt.Errorf("connect to nats: %w", err)
+	}
+	cleanupFuncs = append(cleanupFuncs, func() {
+		natsConn.Close()
+	})
+
+	js, err = jetstream.New(natsConn)
+	if err != nil {
+		return fmt.Errorf("create jetstream context: %w", err)
+	}
+
+	// Create the stream that handlers publish to.
+	_, err = js.CreateStream(ctx, jetstream.StreamConfig{
+		Name:     "medincident",
+		Subjects: []string{"medincident.>"},
+	})
+	if err != nil {
+		return fmt.Errorf("create jetstream stream: %w", err)
+	}
+
+	fmt.Printf("NATS ready at %s (JetStream enabled)\n", natsURL)
+
+	// 4. Our service (in-process)
 	if err := startService(); err != nil {
 		return fmt.Errorf("start service: %w", err)
 	}
 
-	// 4. Zitadel
+	// 5. Zitadel
 	zitadelContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image: "ghcr.io/zitadel/zitadel:v4.13.1",
@@ -162,7 +221,7 @@ func setup(ctx context.Context) error {
 	}
 	zitadelBaseURL = fmt.Sprintf("http://%s:%s", host, mappedPort.Port())
 
-	// 5. Extract PAT from Zitadel logs
+	// 6. Extract PAT from Zitadel logs
 	pat, err = extractPAT(ctx, zitadelContainer)
 	if err != nil {
 		return fmt.Errorf("extract PAT: %w", err)
@@ -187,12 +246,8 @@ func startService() error {
 		err := c.Next()
 		if err == nil {
 			switch c.Path() {
-			case "/events":
-				trySend(eventCh, body)
-			case "/requests":
-				trySend(requestCh, body)
-			case "/responses":
-				trySend(responseCh, body)
+			case "/debug":
+				trySend(debugCh, body)
 			case "/events/user/human/added":
 				trySend(userAddedCh, body)
 			case "/events/user/human/profile/changed":
@@ -202,17 +257,15 @@ func startService() error {
 		return err
 	})
 
-	// Health check.
-	app.Get("/", func(c fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusOK)
-	})
+	// Health check (no middleware).
+	app.Get("/health", handler.HealthCheck(natsConn))
 
-	// Register real production handlers.
-	app.Post("/events", handler.PostAnyEvent(&logger))
-	app.Post("/events/user/human/added", handler.PostHumanUserAdded(&logger))
-	app.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(&logger))
-	app.Post("/requests", handler.PostAnyRequest(&logger))
-	app.Post("/responses", handler.PostAnyResponse(&logger))
+	// POST routes with ContentType middleware, no HMAC (empty key = no-op).
+	post := app.Group("", middleware.ContentType(), middleware.HMACVerify(""))
+
+	post.Post("/debug", handler.PostDebugWebhook(&logger))
+	post.Post("/events/user/human/added", handler.PostHumanUserAdded(&logger, js))
+	post.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(&logger, js))
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -405,7 +458,53 @@ func drainChannel(ch chan []byte) {
 	}
 }
 
+// fetchNATSMessage creates an ephemeral consumer on the given subject, fetches one message,
+// and unmarshals it into an eventsv1.Envelope.
+func fetchNATSMessage(t *testing.T, subject string, timeout time.Duration) *eventsv1.Envelope {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	cons, err := js.CreateConsumer(ctx, "medincident", jetstream.ConsumerConfig{
+		FilterSubject: subject,
+		DeliverPolicy: jetstream.DeliverLastPerSubjectPolicy,
+		AckPolicy:     jetstream.AckExplicitPolicy,
+	})
+	require.NoError(t, err, "create NATS consumer for %s", subject)
+
+	msgs, err := cons.Fetch(1, jetstream.FetchMaxWait(timeout))
+	require.NoError(t, err, "fetch NATS message from %s", subject)
+
+	var envelope *eventsv1.Envelope
+	for msg := range msgs.Messages() {
+		envelope = new(eventsv1.Envelope)
+		require.NoError(t, proto.Unmarshal(msg.Data(), envelope), "unmarshal NATS envelope")
+		_ = msg.Ack()
+	}
+
+	require.NoError(t, msgs.Error(), "NATS fetch error for %s", subject)
+	require.NotNil(t, envelope, "no NATS message received on %s within %s", subject, timeout)
+
+	return envelope
+}
+
 // --- Test Cases ---
+
+func TestHealthCheck(t *testing.T) {
+	resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/health", servicePort))
+	require.NoError(t, err, "GET /health")
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var result map[string]any
+	require.NoError(t, json.Unmarshal(body, &result))
+	assert.Equal(t, "ok", result["status"])
+}
 
 func TestUserHumanAdded(t *testing.T) {
 	drainChannel(userAddedCh)
@@ -425,6 +524,7 @@ func TestUserHumanAdded(t *testing.T) {
 	_, err = createUser("Test", "User", email)
 	require.NoError(t, err, "create user")
 
+	// Verify webhook received.
 	body := waitForBody(t, userAddedCh, 30*time.Second)
 
 	var envelope zitadel.Envelope[zitadel.UserHumanAdded]
@@ -434,6 +534,21 @@ func TestUserHumanAdded(t *testing.T) {
 	assert.Equal(t, "User", envelope.EventPayload.LastName)
 	assert.Equal(t, email, envelope.EventPayload.Email)
 	assert.Equal(t, "user.human.added", envelope.EventType)
+
+	// Verify NATS message published.
+	natsEnvelope := fetchNATSMessage(t, "medincident.users.v1.created", 30*time.Second)
+
+	assert.Equal(t, "user", natsEnvelope.GetAggregateType())
+	assert.NotEmpty(t, natsEnvelope.GetEventId())
+	assert.NotNil(t, natsEnvelope.GetOccurredAt())
+	assert.NotEmpty(t, natsEnvelope.GetAggregateId())
+
+	// Unpack the payload and verify UserCreated fields.
+	var userCreated usersv1.UserCreated
+	require.NoError(t, natsEnvelope.GetPayload().UnmarshalTo(&userCreated), "unmarshal UserCreated from NATS payload")
+	assert.Equal(t, "Test", userCreated.GetFirstName())
+	assert.Equal(t, "User", userCreated.GetLastName())
+	assert.Equal(t, email, userCreated.GetEmail())
 }
 
 func TestUserHumanProfileChanged(t *testing.T) {
@@ -459,22 +574,37 @@ func TestUserHumanProfileChanged(t *testing.T) {
 	err = updateProfile(userID, "Updated", "Profile")
 	require.NoError(t, err, "update profile")
 
+	// Verify webhook received.
 	body := waitForBody(t, profileChangedCh, 30*time.Second)
 
 	var envelope zitadel.Envelope[zitadel.UserHumanProfileChanged]
 	require.NoError(t, json.Unmarshal(body, &envelope), "unmarshal envelope")
 
-	assert.Equal(t, "Updated", envelope.EventPayload.FirstName)
-	assert.Equal(t, "Profile", envelope.EventPayload.LastName)
+	assert.Equal(t, "Updated", *envelope.EventPayload.FirstName)
+	assert.Equal(t, "Profile", *envelope.EventPayload.LastName)
+
+	// Verify NATS message published.
+	natsEnvelope := fetchNATSMessage(t, "medincident.users.v1.name_changed", 30*time.Second)
+
+	assert.Equal(t, "user", natsEnvelope.GetAggregateType())
+	assert.NotEmpty(t, natsEnvelope.GetEventId())
+	assert.NotNil(t, natsEnvelope.GetOccurredAt())
+	assert.NotEmpty(t, natsEnvelope.GetAggregateId())
+
+	// Unpack the payload and verify UserNameChanged fields.
+	var nameChanged usersv1.UserNameChanged
+	require.NoError(t, natsEnvelope.GetPayload().UnmarshalTo(&nameChanged), "unmarshal UserNameChanged from NATS payload")
+	assert.Equal(t, "Updated", nameChanged.GetFirstName())
+	assert.Equal(t, "Profile", nameChanged.GetLastName())
 }
 
-func TestCatchAllEvent(t *testing.T) {
-	drainChannel(eventCh)
+func TestDebugWebhook(t *testing.T) {
+	drainChannel(debugCh)
 
 	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
-	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/events", servicePort)
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/debug", servicePort)
 
-	tid, err := createTarget("event-"+suffix, endpoint)
+	tid, err := createTarget("debug-"+suffix, endpoint)
 	require.NoError(t, err, "create target")
 
 	err = setExecution(map[string]any{"event": map[string]any{"all": true}}, tid)
@@ -483,59 +613,13 @@ func TestCatchAllEvent(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	email := fmt.Sprintf("test-%s@example.com", suffix)
-	_, err = createUser("CatchAll", "Event", email)
+	_, err = createUser("Debug", "Event", email)
 	require.NoError(t, err, "create user")
 
-	body := waitForBody(t, eventCh, 30*time.Second)
+	body := waitForBody(t, debugCh, 30*time.Second)
 
 	assert.True(t, json.Valid(body), "body should be valid JSON")
 	var raw map[string]any
 	require.NoError(t, json.Unmarshal(body, &raw))
 	assert.Contains(t, raw, "event_type")
-}
-
-func TestCatchAllRequest(t *testing.T) {
-	drainChannel(requestCh)
-
-	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
-	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/requests", servicePort)
-
-	tid, err := createTarget("request-"+suffix, endpoint)
-	require.NoError(t, err, "create target")
-
-	err = setExecution(map[string]any{"request": map[string]any{"all": true}}, tid)
-	require.NoError(t, err, "set execution")
-
-	time.Sleep(3 * time.Second)
-
-	email := fmt.Sprintf("test-%s@example.com", suffix)
-	_, err = createUser("CatchAll", "Request", email)
-	require.NoError(t, err, "create user")
-
-	body := waitForBody(t, requestCh, 30*time.Second)
-
-	assert.True(t, json.Valid(body), "body should be valid JSON")
-}
-
-func TestCatchAllResponse(t *testing.T) {
-	drainChannel(responseCh)
-
-	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
-	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/responses", servicePort)
-
-	tid, err := createTarget("response-"+suffix, endpoint)
-	require.NoError(t, err, "create target")
-
-	err = setExecution(map[string]any{"response": map[string]any{"all": true}}, tid)
-	require.NoError(t, err, "set execution")
-
-	time.Sleep(3 * time.Second)
-
-	email := fmt.Sprintf("test-%s@example.com", suffix)
-	_, err = createUser("CatchAll", "Response", email)
-	require.NoError(t, err, "create user")
-
-	body := waitForBody(t, responseCh, 30*time.Second)
-
-	assert.True(t, json.Valid(body), "body should be valid JSON")
 }

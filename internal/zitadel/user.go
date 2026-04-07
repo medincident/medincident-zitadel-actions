@@ -16,11 +16,12 @@ type UserHumanAdded struct {
 }
 
 // UserHumanProfileChanged is the payload of the user.human.profile.changed Zitadel event.
+// Fields are pointers because Zitadel only sends changed fields; nil means unchanged.
 type UserHumanProfileChanged struct {
-	FirstName         string `json:"firstName"`
-	LastName          string `json:"lastName"`
-	NickName          string `json:"nickName"`
-	DisplayName       string `json:"displayName"`
-	PreferredLanguage string `json:"preferredLanguage"`
-	Gender            int    `json:"gender"`
+	FirstName         *string `json:"firstName"`
+	LastName          *string `json:"lastName"`
+	NickName          *string `json:"nickName"`
+	DisplayName       *string `json:"displayName"`
+	PreferredLanguage *string `json:"preferredLanguage"`
+	Gender            *int    `json:"gender"`
 }

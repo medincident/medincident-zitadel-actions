@@ -1,0 +1,18 @@
+version: v2
+inputs:
+  - git_repo: https://github.com/medincident/medincident-proto.git
+    subdir: api/proto
+    paths:
+      - medincident/events/v1
+      - medincident/users/v1
+plugins:
+  - local:
+      - go
+      - tool
+      - protoc-gen-go
+    out: pkg
+    opt:
+      - paths=source_relative
+      - Mmedincident/events/v1/envelope.proto=github.com/medincident/medincident-zitadel-actions/pkg/medincident/events/v1
+      - Mmedincident/users/v1/events.proto=github.com/medincident/medincident-zitadel-actions/pkg/medincident/users/v1
+      - Mmedincident/users/v1/types.proto=github.com/medincident/medincident-zitadel-actions/pkg/medincident/users/v1

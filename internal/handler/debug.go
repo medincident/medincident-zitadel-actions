@@ -7,13 +7,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// PostAnyResponse returns a handler for the catch-all POST /responses endpoint.
-func PostAnyResponse(logger *zerolog.Logger) fiber.Handler {
+// PostDebugWebhook returns a handler that logs the raw JSON body of any
+// Zitadel webhook. For debugging only — no binding, no publishing.
+func PostDebugWebhook(logger *zerolog.Logger) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		if !c.Is("json") {
-			return fiber.ErrUnprocessableEntity
-		}
-
 		event := logger.Info().
 			Str("content_type", string(c.Request().Header.ContentType()))
 
@@ -25,7 +22,7 @@ func PostAnyResponse(logger *zerolog.Logger) fiber.Handler {
 			}
 		}
 
-		event.Msg("received response")
+		event.Msg("received debug webhook")
 
 		return c.SendStatus(fiber.StatusOK)
 	}
