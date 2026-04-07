@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	eventsv1 "github.com/medincident/medincident-zitadel-actions/pkg/medincident/events/v1"
-	usersv1 "github.com/medincident/medincident-zitadel-actions/pkg/medincident/users/v1"
+	eventsv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/events/v1"
+	usersv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )

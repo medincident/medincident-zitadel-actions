@@ -35,8 +35,8 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/middleware"
 	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
-	eventsv1 "github.com/medincident/medincident-zitadel-actions/pkg/medincident/events/v1"
-	usersv1 "github.com/medincident/medincident-zitadel-actions/pkg/medincident/users/v1"
+	eventsv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/events/v1"
+	usersv1 "github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1"
 )
 
 // Package-level state shared across all tests.
