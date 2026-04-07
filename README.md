@@ -10,6 +10,10 @@ HTTP-шлюз между Zitadel Actions v2 и доменными микросе
 | `POST /events/user/human/profile/changed` | `user.human.profile.changed` | `medincident.users.v1.name_changed` | Изменение имени (firstName, lastName, displayName, nickName) |
 | `POST /events/user/human/profile/changed` | `user.human.profile.changed` | `medincident.users.v1.language_changed` | Изменение языка |
 | `POST /events/user/human/profile/changed` | `user.human.profile.changed` | `medincident.users.v1.gender_changed` | Изменение пола |
+| `POST /events/user/human/email/changed` | `user.human.email.changed` | `medincident.users.v1.email_changed` | Изменение email |
+| `POST /events/user/human/email/verified` | `user.human.email.verified` | `medincident.users.v1.email_verified` | Подтверждение email |
+| `POST /events/session/added` | `session.added` | `medincident.sessions.v1.created` | Создание сессии (fingerprint, IP, user agent) |
+| `POST /events/session/user/checked` | `session.user.checked` | `medincident.sessions.v1.user_checked` | Привязка пользователя к сессии |
 | `POST /debug` | любой | — | Логирование raw body (отладка) |
 | `GET /health` | — | — | Проверка здоровья сервиса |
 
