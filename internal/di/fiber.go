@@ -69,6 +69,8 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	post.Post("/debug", handler.PostDebugWebhook(logger))
 	post.Post("/events/user/human/added", eh.PostHumanUserAdded())
 	post.Post("/events/user/human/profile/changed", eh.PostHumanUserProfileChanged())
+	post.Post("/events/user/human/email/changed", eh.PostHumanUserEmailChanged())
+	post.Post("/events/user/human/email/verified", eh.PostHumanUserEmailVerified())
 
 	return &fiberWrapper{app: app}, nil
 }

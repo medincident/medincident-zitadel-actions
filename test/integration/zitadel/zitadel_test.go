@@ -48,6 +48,8 @@ var (
 	debugCh          = make(chan []byte, 10)
 	userAddedCh      = make(chan []byte, 10)
 	profileChangedCh = make(chan []byte, 10)
+	emailChangedCh   = make(chan []byte, 10)
+	emailVerifiedCh  = make(chan []byte, 10)
 
 	natsConn  *nats.Conn
 	js        jetstream.JetStream
@@ -308,6 +310,10 @@ func startService() error {
 				trySend(userAddedCh, body)
 			case "/events/user/human/profile/changed":
 				trySend(profileChangedCh, body)
+			case "/events/user/human/email/changed":
+				trySend(emailChangedCh, body)
+			case "/events/user/human/email/verified":
+				trySend(emailVerifiedCh, body)
 			}
 		}
 		return err
@@ -325,6 +331,8 @@ func startService() error {
 	post.Post("/debug", handler.PostDebugWebhook(&logger))
 	post.Post("/events/user/human/added", eh.PostHumanUserAdded())
 	post.Post("/events/user/human/profile/changed", eh.PostHumanUserProfileChanged())
+	post.Post("/events/user/human/email/changed", eh.PostHumanUserEmailChanged())
+	post.Post("/events/user/human/email/verified", eh.PostHumanUserEmailVerified())
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -496,6 +504,43 @@ func updateProfile(userID, givenName, familyName string) error {
 	return err
 }
 
+func updateEmail(userID, newEmail string) (string, error) {
+	resp, err := zitadelAPI("POST", "/zitadel.user.v2.UserService/UpdateHumanUser", map[string]any{
+		"userId": userID,
+		"email": map[string]any{
+			"email":      newEmail,
+			"returnCode": map[string]any{},
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("update email: %w", err)
+	}
+
+	// Extract verification code from response.
+	// Zitadel may return it at top level or nested under "email".
+	if vc, ok := resp["verificationCode"].(string); ok {
+		return vc, nil
+	}
+	if ec, ok := resp["emailCode"].(string); ok {
+		return ec, nil
+	}
+	if email, ok := resp["email"].(map[string]any); ok {
+		if vc, ok := email["verificationCode"].(string); ok {
+			return vc, nil
+		}
+	}
+
+	return "", fmt.Errorf("no verification code in response: %v", resp)
+}
+
+func verifyEmail(userID, code string) error {
+	_, err := zitadelAPI("POST", "/zitadel.user.v2.UserService/VerifyEmail", map[string]any{
+		"userId":           userID,
+		"verificationCode": code,
+	})
+	return err
+}
+
 func waitForBody(t *testing.T, ch <-chan []byte, timeout time.Duration) []byte {
 	t.Helper()
 	select {
@@ -655,6 +700,106 @@ func TestUserHumanProfileChanged(t *testing.T) {
 	require.NoError(t, natsEnvelope.GetPayload().UnmarshalTo(&nameChanged), "unmarshal UserNameChanged from NATS payload")
 	assert.Equal(t, "Updated", nameChanged.GetFirstName())
 	assert.Equal(t, "Profile", nameChanged.GetLastName())
+}
+
+func TestUserHumanEmailChanged(t *testing.T) {
+	drainChannel(emailChangedCh)
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/events/user/human/email/changed", servicePort)
+
+	tid, err := createTarget("email-changed-"+suffix, endpoint)
+	require.NoError(t, err, "create target")
+
+	err = setExecution(map[string]any{"event": map[string]any{"event": "user.human.email.changed"}}, tid)
+	require.NoError(t, err, "set execution")
+
+	time.Sleep(3 * time.Second)
+
+	email := fmt.Sprintf("test-%s@example.com", suffix)
+	userID, err := createUser("Email", "Test", email)
+	require.NoError(t, err, "create user")
+
+	time.Sleep(time.Second)
+
+	newEmail := fmt.Sprintf("changed-%s@example.com", suffix)
+	_, err = updateEmail(userID, newEmail)
+	require.NoError(t, err, "update email")
+
+	// Verify webhook received.
+	body := waitForBody(t, emailChangedCh, 30*time.Second)
+
+	var envelope zitadel.Envelope[zitadel.UserHumanEmailChanged]
+	require.NoError(t, json.Unmarshal(body, &envelope), "unmarshal envelope")
+
+	assert.Equal(t, newEmail, envelope.EventPayload.Email)
+	assert.Equal(t, "user.human.email.changed", envelope.EventType)
+
+	// Verify NATS message published.
+	natsEnvelope := fetchNATSMessage(t, "medincident.users.v1.email_changed", 30*time.Second)
+
+	assert.Equal(t, "user", natsEnvelope.GetAggregateType())
+	assert.NotEmpty(t, natsEnvelope.GetEventId())
+	assert.NotNil(t, natsEnvelope.GetOccurredAt())
+	assert.NotEmpty(t, natsEnvelope.GetAggregateId())
+
+	// Unpack the payload and verify UserEmailChanged fields.
+	var emailChanged usersv1.UserEmailChanged
+	require.NoError(t, natsEnvelope.GetPayload().UnmarshalTo(&emailChanged), "unmarshal UserEmailChanged from NATS payload")
+	assert.Equal(t, newEmail, emailChanged.GetEmail())
+}
+
+func TestUserHumanEmailVerified(t *testing.T) {
+	drainChannel(emailVerifiedCh)
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/events/user/human/email/verified", servicePort)
+
+	tid, err := createTarget("email-verified-"+suffix, endpoint)
+	require.NoError(t, err, "create target")
+
+	err = setExecution(map[string]any{"event": map[string]any{"event": "user.human.email.verified"}}, tid)
+	require.NoError(t, err, "set execution")
+
+	time.Sleep(3 * time.Second)
+
+	email := fmt.Sprintf("test-%s@example.com", suffix)
+	userID, err := createUser("Verify", "Test", email)
+	require.NoError(t, err, "create user")
+
+	time.Sleep(time.Second)
+
+	// Change email to make it unverified, capturing the verification code.
+	newEmail := fmt.Sprintf("verify-%s@example.com", suffix)
+	code, err := updateEmail(userID, newEmail)
+	require.NoError(t, err, "update email")
+	require.NotEmpty(t, code, "verification code should be returned")
+
+	time.Sleep(time.Second)
+
+	// Verify the email — this triggers user.human.email.verified.
+	err = verifyEmail(userID, code)
+	require.NoError(t, err, "verify email")
+
+	// Verify webhook received.
+	body := waitForBody(t, emailVerifiedCh, 30*time.Second)
+
+	var envelope zitadel.Envelope[zitadel.UserHumanEmailVerified]
+	require.NoError(t, json.Unmarshal(body, &envelope), "unmarshal envelope")
+
+	assert.Equal(t, "user.human.email.verified", envelope.EventType)
+
+	// Verify NATS message published.
+	natsEnvelope := fetchNATSMessage(t, "medincident.users.v1.email_verified", 30*time.Second)
+
+	assert.Equal(t, "user", natsEnvelope.GetAggregateType())
+	assert.NotEmpty(t, natsEnvelope.GetEventId())
+	assert.NotNil(t, natsEnvelope.GetOccurredAt())
+	assert.NotEmpty(t, natsEnvelope.GetAggregateId())
+
+	// Unpack the payload — UserEmailVerified has no fields, just verify it deserializes.
+	var emailVerified usersv1.UserEmailVerified
+	require.NoError(t, natsEnvelope.GetPayload().UnmarshalTo(&emailVerified), "unmarshal UserEmailVerified from NATS payload")
 }
 
 func TestDebugWebhook(t *testing.T) {

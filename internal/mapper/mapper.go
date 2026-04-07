@@ -87,6 +87,30 @@ func MapUserHumanProfileChanged(envelope *zitadel.Envelope[zitadel.UserHumanProf
 	return events, nil
 }
 
+// MapUserEmailChanged converts a Zitadel user.human.email.changed event into a domain proto event.
+func MapUserEmailChanged(envelope *zitadel.Envelope[zitadel.UserHumanEmailChanged]) ([]MappedEvent, error) {
+	p := &envelope.EventPayload
+
+	event, err := newUserMappedEvent("medincident.users.v1.email_changed", envelope.AggregateID, envelope.Sequence, envelope.CreatedAt, envelope.UserID, &usersv1.UserEmailChanged{
+		Email: p.Email,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return []MappedEvent{event}, nil
+}
+
+// MapUserEmailVerified converts a Zitadel user.human.email.verified event into a domain proto event.
+func MapUserEmailVerified(envelope *zitadel.Envelope[zitadel.UserHumanEmailVerified]) ([]MappedEvent, error) {
+	event, err := newUserMappedEvent("medincident.users.v1.email_verified", envelope.AggregateID, envelope.Sequence, envelope.CreatedAt, envelope.UserID, &usersv1.UserEmailVerified{})
+	if err != nil {
+		return nil, err
+	}
+
+	return []MappedEvent{event}, nil
+}
+
 // deterministicEventID builds a UUID v5 from the Zitadel aggregate ID, sequence,
 // and target NATS subject. This ensures the same source event always produces
 // the same event ID — even when one Zitadel event fans out into multiple
