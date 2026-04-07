@@ -16,9 +16,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-redsync/redsync/v4"
+	goredis "github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/gofiber/fiber/v3"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,6 +30,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/medincident/medincident-zitadel-actions/internal/config"
 	"github.com/medincident/medincident-zitadel-actions/internal/handler"
 	"github.com/medincident/medincident-zitadel-actions/internal/middleware"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
@@ -44,8 +48,9 @@ var (
 	userAddedCh      = make(chan []byte, 10)
 	profileChangedCh = make(chan []byte, 10)
 
-	natsConn *nats.Conn
-	js       jetstream.JetStream
+	natsConn  *nats.Conn
+	js        jetstream.JetStream
+	redisAddr string
 
 	cleanupFuncs []func()
 )
@@ -161,6 +166,34 @@ func setup(ctx context.Context) error {
 
 	fmt.Printf("NATS ready at %s (JetStream enabled)\n", natsURL)
 
+	// 3b. Redis
+	redisContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        "redis:7-alpine",
+			ExposedPorts: []string{"6379/tcp"},
+			WaitingFor: wait.ForListeningPort("6379/tcp").
+				WithStartupTimeout(30 * time.Second),
+		},
+		Started: true,
+	})
+	if err != nil {
+		return fmt.Errorf("start redis: %w", err)
+	}
+	cleanupFuncs = append(cleanupFuncs, func() {
+		_ = redisContainer.Terminate(context.Background())
+	})
+
+	redisMappedPort, err := redisContainer.MappedPort(ctx, "6379/tcp")
+	if err != nil {
+		return fmt.Errorf("get redis mapped port: %w", err)
+	}
+	redisHost, err := redisContainer.Host(ctx)
+	if err != nil {
+		return fmt.Errorf("get redis host: %w", err)
+	}
+	redisAddr = fmt.Sprintf("%s:%s", redisHost, redisMappedPort.Port())
+	fmt.Printf("Redis ready at %s\n", redisAddr)
+
 	// 4. Our service (in-process)
 	if err := startService(); err != nil {
 		return fmt.Errorf("start service: %w", err)
@@ -234,6 +267,23 @@ func setup(ctx context.Context) error {
 func startService() error {
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 
+	rc := redis.NewClient(&redis.Options{
+		Addr: redisAddr,
+	})
+	pool := goredis.NewPool(rc)
+	rs := redsync.New(pool)
+
+	cfg := &config.Config{
+		Redis: config.RedisConfig{
+			LockPrefix: "test:lock:",
+		},
+		Publish: config.PublishConfig{
+			MaxRetries:     3,
+			InitialBackoff: 100 * time.Millisecond,
+			MaxBackoff:     1 * time.Second,
+		},
+	}
+
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -258,14 +308,14 @@ func startService() error {
 	})
 
 	// Health check (no middleware).
-	app.Get("/health", handler.HealthCheck(natsConn))
+	app.Get("/health", handler.HealthCheck(natsConn, rc))
 
 	// POST routes with ContentType middleware, no HMAC (empty key = no-op).
 	post := app.Group("", middleware.ContentType(), middleware.HMACVerify("", 5*time.Minute))
 
 	post.Post("/debug", handler.PostDebugWebhook(&logger))
-	post.Post("/events/user/human/added", handler.PostHumanUserAdded(&logger, js))
-	post.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(&logger, js))
+	post.Post("/events/user/human/added", handler.PostHumanUserAdded(&logger, js, rs, cfg))
+	post.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(&logger, js, rs, cfg))
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
