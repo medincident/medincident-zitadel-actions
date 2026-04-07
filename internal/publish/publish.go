@@ -14,9 +14,21 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/mapper"
 )
 
-// PublishEvents serializes each MappedEvent's Envelope and publishes it to
+// Publisher publishes mapped events to NATS JetStream with retry.
+type Publisher struct {
+	logger *zerolog.Logger
+	js     jetstream.JetStream
+	cfg    config.PublishConfig
+}
+
+// NewPublisher creates a new Publisher.
+func NewPublisher(logger *zerolog.Logger, js jetstream.JetStream, cfg config.PublishConfig) *Publisher {
+	return &Publisher{logger: logger, js: js, cfg: cfg}
+}
+
+// Publish serializes each MappedEvent's Envelope and publishes it to
 // NATS JetStream with exponential backoff retry.
-func PublishEvents(ctx context.Context, logger *zerolog.Logger, js jetstream.JetStream, cfg config.PublishConfig, events []mapper.MappedEvent) error {
+func (p *Publisher) Publish(ctx context.Context, events []mapper.MappedEvent) error {
 	for _, event := range events {
 		data, err := proto.Marshal(event.Envelope)
 		if err != nil {
@@ -38,23 +50,23 @@ func PublishEvents(ctx context.Context, logger *zerolog.Logger, js jetstream.Jet
 		}
 
 		b := backoff.NewExponentialBackOff()
-		b.InitialInterval = cfg.InitialBackoff.Duration()
-		b.MaxInterval = cfg.MaxBackoff.Duration()
+		b.InitialInterval = p.cfg.InitialBackoff.Duration()
+		b.MaxInterval = p.cfg.MaxBackoff.Duration()
 		b.MaxElapsedTime = 0
 
 		maxRetries := uint64(0)
-		if cfg.MaxRetries > 0 {
-			maxRetries = uint64(cfg.MaxRetries) //nolint:gosec // MaxRetries is validated positive by config defaults
+		if p.cfg.MaxRetries > 0 {
+			maxRetries = uint64(p.cfg.MaxRetries) //nolint:gosec // MaxRetries is validated positive by config defaults
 		}
 		retryable := backoff.WithMaxRetries(b, maxRetries)
 
 		err = backoff.Retry(func() error {
-			_, pubErr := js.PublishMsg(ctx, msg)
+			_, pubErr := p.js.PublishMsg(ctx, msg)
 			return pubErr
 		}, backoff.WithContext(retryable, ctx))
 
 		if err != nil {
-			logger.Warn().
+			p.logger.Warn().
 				Str("subject", event.Subject).
 				Str("event_id", event.Envelope.GetEventId()).
 				Str("aggregate_id", event.Envelope.GetAggregateId()).

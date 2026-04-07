@@ -33,6 +33,7 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 	"github.com/medincident/medincident-zitadel-actions/internal/handler"
 	"github.com/medincident/medincident-zitadel-actions/internal/middleware"
+	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 	eventsv1 "github.com/medincident/medincident-zitadel-actions/pkg/medincident/events/v1"
 	usersv1 "github.com/medincident/medincident-zitadel-actions/pkg/medincident/users/v1"
@@ -317,9 +318,12 @@ func startService() error {
 	// POST routes with ContentType middleware, no HMAC (empty key = no-op).
 	post := app.Group("", middleware.ContentType(), middleware.HMACVerify("", 5*time.Minute))
 
+	pub := publish.NewPublisher(&logger, js, cfg.Publish)
+	eh := handler.NewEventHandler(&logger, pub, rs, cfg)
+
 	post.Post("/debug", handler.PostDebugWebhook(&logger))
-	post.Post("/events/user/human/added", handler.PostHumanUserAdded(&logger, js, rs, cfg))
-	post.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(&logger, js, rs, cfg))
+	post.Post("/events/user/human/added", eh.PostHumanUserAdded())
+	post.Post("/events/user/human/profile/changed", eh.PostHumanUserProfileChanged())
 
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

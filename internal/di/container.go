@@ -19,6 +19,8 @@ func NewContainer(cfg *config.Config) do.Injector {
 	do.Provide(injector, ProvideNatsConnWrapper)
 	do.Provide(injector, ProvideNatsConn)
 	do.Provide(injector, ProvideJetStream)
+	do.Provide(injector, ProvidePublisher)
+	do.Provide(injector, ProvideEventHandler)
 	do.Provide(injector, ProvideFiberWrapper)
 	do.Provide(injector, ProvideFiberApp)
 

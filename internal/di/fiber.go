@@ -5,11 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/go-redsync/redsync/v4"
 	fiberzerolog "github.com/gofiber/contrib/v3/zerolog"
 	"github.com/gofiber/fiber/v3"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 	goredislib "github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/samber/do/v2"
@@ -44,15 +42,11 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	if err != nil {
 		return nil, err
 	}
-	js, err := do.Invoke[jetstream.JetStream](injector)
-	if err != nil {
-		return nil, err
-	}
 	rc, err := do.Invoke[*goredislib.Client](injector)
 	if err != nil {
 		return nil, err
 	}
-	rs, err := do.Invoke[*redsync.Redsync](injector)
+	eh, err := do.Invoke[*handler.EventHandler](injector)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +67,8 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	post := app.Group("", middleware.ContentType(), middleware.HMACVerify(cfg.SigningKey, cfg.SigningKeyTolerance.Duration()))
 
 	post.Post("/debug", handler.PostDebugWebhook(logger))
-	post.Post("/events/user/human/added", handler.PostHumanUserAdded(logger, js, rs, cfg))
-	post.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(logger, js, rs, cfg))
+	post.Post("/events/user/human/added", eh.PostHumanUserAdded())
+	post.Post("/events/user/human/profile/changed", eh.PostHumanUserProfileChanged())
 
 	return &fiberWrapper{app: app}, nil
 }
