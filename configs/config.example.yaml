@@ -7,11 +7,58 @@
 # Required for production. If empty, HMAC verification is skipped (development only).
 # signing_key: ${ZITADEL_SIGNING_KEY}
 
+# Maximum allowed age of a signed request (replay protection).
+# Uses Go duration format (e.g. 5m, 30s, 1m30s).
+# Default: 5m
+# signing_key_tolerance: 5m
+
 # NATS connection settings.
 nats:
   # NATS server URL.
   # Default: nats://localhost:4222
   # url: nats://localhost:4222
+
+  # Maximum number of reconnect attempts. -1 means unlimited.
+  # Default: -1
+  # max_reconnects: -1
+
+  # How long to wait between reconnect attempts.
+  # Uses Go duration format (e.g. 2s, 500ms).
+  # Default: 2s
+  # reconnect_wait: 2s
+
+# Redis connection and distributed lock settings.
+redis:
+  # Redis server address (host:port).
+  # Default: localhost:6379
+  # address: localhost:6379
+
+  # Redis password. Leave empty if authentication is not required.
+  # Default: ""
+  # password: ${REDIS_PASSWORD}
+
+  # Redis database index.
+  # Default: 0
+  # db: 0
+
+  # Key prefix used for distributed idempotency locks.
+  # Default: medincident:lock:
+  # lock_prefix: medincident:lock:
+
+# NATS JetStream publish retry settings.
+publish:
+  # Maximum number of publish retry attempts before giving up.
+  # Default: 5
+  # max_retries: 5
+
+  # Initial backoff duration before the first retry.
+  # Uses Go duration format. Backoff doubles on each attempt up to max_backoff.
+  # Default: 200ms
+  # initial_backoff: 200ms
+
+  # Maximum backoff duration between retries.
+  # Default: 5s
+  # max_backoff: 5s
 
 zerolog:
   # Global minimum log level.
