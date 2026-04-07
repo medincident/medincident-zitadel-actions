@@ -261,7 +261,7 @@ func startService() error {
 	app.Get("/health", handler.HealthCheck(natsConn))
 
 	// POST routes with ContentType middleware, no HMAC (empty key = no-op).
-	post := app.Group("", middleware.ContentType(), middleware.HMACVerify(""))
+	post := app.Group("", middleware.ContentType(), middleware.HMACVerify("", 5*time.Minute))
 
 	post.Post("/debug", handler.PostDebugWebhook(&logger))
 	post.Post("/events/user/human/added", handler.PostHumanUserAdded(&logger, js))

@@ -6,13 +6,14 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samber/oops"
 
+	"github.com/medincident/medincident-zitadel-actions/internal/config"
 	"github.com/medincident/medincident-zitadel-actions/internal/mapper"
 	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
 
 // PostHumanUserAdded returns a handler for POST /events/user/human/added.
-func PostHumanUserAdded(logger *zerolog.Logger, js jetstream.JetStream) fiber.Handler {
+func PostHumanUserAdded(logger *zerolog.Logger, js jetstream.JetStream, cfg config.PublishConfig) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		envelope := new(zitadel.Envelope[zitadel.UserHumanAdded])
 		if err := c.Bind().Body(envelope); err != nil {
@@ -24,7 +25,7 @@ func PostHumanUserAdded(logger *zerolog.Logger, js jetstream.JetStream) fiber.Ha
 			return oops.In("handler").Code("map_failed").With("event_type", "user.human.added").With("user_id", envelope.UserID).Wrap(err)
 		}
 
-		if err := publish.PublishEvents(c.Context(), js, events); err != nil {
+		if err := publish.PublishEvents(c.Context(), logger, js, cfg, events); err != nil {
 			return oops.In("handler").Code("publish_failed").With("event_type", "user.human.added").With("user_id", envelope.UserID).Wrap(err)
 		}
 

@@ -36,7 +36,7 @@ type RedisConfig struct {
 
 // PublishConfig holds NATS JetStream publish retry settings.
 type PublishConfig struct {
-	MaxRetries     int           `yaml:"max_retries"`
+	MaxRetries     uint          `yaml:"max_retries"`
 	InitialBackoff time.Duration `yaml:"initial_backoff"`
 	MaxBackoff     time.Duration `yaml:"max_backoff"`
 }

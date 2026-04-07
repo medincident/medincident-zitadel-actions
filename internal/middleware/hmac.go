@@ -15,15 +15,12 @@ import (
 const (
 	// signatureHeader is the HTTP header Zitadel uses for webhook signatures.
 	signatureHeader = "ZITADEL-Signature"
-
-	// defaultTolerance is the maximum allowed age of a signed request (replay protection).
-	defaultTolerance = 5 * time.Minute
 )
 
 // HMACVerify returns a Fiber middleware that validates the Zitadel webhook
 // HMAC-SHA256 signature. If signingKey is empty, the middleware is a no-op
 // (useful for development).
-func HMACVerify(signingKey string) fiber.Handler {
+func HMACVerify(signingKey string, tolerance time.Duration) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		if signingKey == "" {
 			return c.Next()
@@ -44,7 +41,7 @@ func HMACVerify(signingKey string) fiber.Handler {
 		if age < 0 {
 			age = -age
 		}
-		if age > defaultTolerance {
+		if age > tolerance {
 			return fiber.ErrUnauthorized
 		}
 

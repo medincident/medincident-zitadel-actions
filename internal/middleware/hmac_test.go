@@ -19,7 +19,7 @@ const testSigningKey = "test-secret-key-for-hmac"
 
 func setupApp(signingKey string) *fiber.App {
 	app := fiber.New()
-	app.Use(middleware.HMACVerify(signingKey))
+	app.Use(middleware.HMACVerify(signingKey, 5*time.Minute))
 	app.Post("/test", func(c fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
 	})
