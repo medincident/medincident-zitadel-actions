@@ -525,8 +525,11 @@ func updateEmail(userID, newEmail string) (string, error) {
 		return "", fmt.Errorf("update email: %w", err)
 	}
 
-	// Zitadel v4.13.1 returns verificationCode at top level when returnCode is set.
-	if vc, ok := resp["verificationCode"].(string); ok {
+	// Zitadel v4.13.1 returns the code as "emailCode" when returnCode is set.
+	if vc, ok := resp["emailCode"].(string); ok && vc != "" {
+		return vc, nil
+	}
+	if vc, ok := resp["verificationCode"].(string); ok && vc != "" {
 		return vc, nil
 	}
 
@@ -547,6 +550,11 @@ func createSession(userID string) (string, error) {
 			"user": map[string]any{
 				"userId": userID,
 			},
+		},
+		"userAgent": map[string]any{
+			"fingerprintId": "test-fingerprint",
+			"ip":            "127.0.0.1",
+			"description":   "integration-test-agent",
 		},
 	})
 	if err != nil {
@@ -861,6 +869,9 @@ func TestSessionAdded(t *testing.T) {
 
 	var sessionCreated sessionsv1.SessionCreated
 	require.NoError(t, natsEnvelope.GetPayload().UnmarshalTo(&sessionCreated), "unmarshal SessionCreated from NATS payload")
+	assert.Equal(t, "test-fingerprint", sessionCreated.GetFingerprintId())
+	assert.Equal(t, "127.0.0.1", sessionCreated.GetIpAddress())
+	assert.Equal(t, "integration-test-agent", sessionCreated.GetUserAgent())
 }
 
 func TestSessionUserChecked(t *testing.T) {
