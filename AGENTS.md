@@ -17,7 +17,7 @@ internal/
   publish/                                  — NATS JetStream publishing helper
   zitadel/                                  — Envelope[T], event payload structs
 buf.gen.yaml                                — buf codegen config (remote git_repo input)
-pkg/                                        — buf-generated Go code (import from here)
+gen/                                        — buf-generated Go code (import from here)
 configs/config.example.yaml                — annotated config reference
 test/integration/zitadel/                   — integration tests (testcontainers-go)
   data/                                     — Zitadel config & steps YAML for tests
@@ -172,7 +172,7 @@ Run: `task test:integration` (requires Docker).
 
 ## What is not done yet (TODO)
 
-- Handlers for `/user/email`, `/user/idp`
+- Handler for `/user/idp`
 - Prometheus metrics endpoint
 - Request ID middleware
 - Unit tests for `Envelope[T]`
