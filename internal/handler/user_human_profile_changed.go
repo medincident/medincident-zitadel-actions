@@ -32,7 +32,7 @@ func (h *EventHandler) PostHumanUserProfileChanged() fiber.Handler {
 			return h.pub.Publish(c.Context(), events)
 		})
 		if err != nil {
-			return oops.In("handler").Code("publish_failed").With("event_type", "user.human.profile.changed").With("user_id", envelope.UserID).Wrap(err)
+			return err
 		}
 
 		h.logger.Info().

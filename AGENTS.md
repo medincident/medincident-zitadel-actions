@@ -146,7 +146,7 @@ envelope.EventPayload.FirstName
 ## Protobuf
 
 Proto source lives in `github.com/medincident/medincident-proto` (remote repo).
-`buf.gen.yaml` in project root fetches protos via `git_repo` input and generates Go code into `pkg/`.
+`buf.gen.yaml` in project root fetches protos via `git_repo` input and generates Go code into `gen/`.
 Generated packages: `gen/medincident/events/v1/`, `gen/medincident/sessions/v1/`, and `gen/medincident/users/v1/`.
 Run `task generate` to regenerate.
 

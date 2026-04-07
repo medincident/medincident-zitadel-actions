@@ -25,7 +25,7 @@ func (h *EventHandler) PostHumanUserEmailChanged() fiber.Handler {
 			return h.pub.Publish(c.Context(), events)
 		})
 		if err != nil {
-			return oops.In("handler").Code("publish_failed").With("event_type", "user.human.email.changed").With("user_id", envelope.UserID).Wrap(err)
+			return err
 		}
 
 		h.logger.Info().

@@ -46,12 +46,12 @@ var (
 	pat            string
 	servicePort    int
 
-	debugCh          = make(chan []byte, 10)
-	userAddedCh      = make(chan []byte, 10)
-	profileChangedCh = make(chan []byte, 10)
-	emailChangedCh      = make(chan []byte, 10)
-	emailVerifiedCh     = make(chan []byte, 10)
-	sessionAddedCh      = make(chan []byte, 10)
+	debugCh              = make(chan []byte, 10)
+	userAddedCh          = make(chan []byte, 10)
+	profileChangedCh     = make(chan []byte, 10)
+	emailChangedCh       = make(chan []byte, 10)
+	emailVerifiedCh      = make(chan []byte, 10)
+	sessionAddedCh       = make(chan []byte, 10)
 	sessionUserCheckedCh = make(chan []byte, 10)
 
 	natsConn  *nats.Conn
@@ -525,18 +525,9 @@ func updateEmail(userID, newEmail string) (string, error) {
 		return "", fmt.Errorf("update email: %w", err)
 	}
 
-	// Extract verification code from response.
-	// Zitadel may return it at top level or nested under "email".
+	// Zitadel v4.13.1 returns verificationCode at top level when returnCode is set.
 	if vc, ok := resp["verificationCode"].(string); ok {
 		return vc, nil
-	}
-	if ec, ok := resp["emailCode"].(string); ok {
-		return ec, nil
-	}
-	if email, ok := resp["email"].(map[string]any); ok {
-		if vc, ok := email["verificationCode"].(string); ok {
-			return vc, nil
-		}
 	}
 
 	return "", fmt.Errorf("no verification code in response: %v", resp)

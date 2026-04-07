@@ -25,7 +25,7 @@ func (h *EventHandler) PostSessionAdded() fiber.Handler {
 			return h.pub.Publish(c.Context(), events)
 		})
 		if err != nil {
-			return oops.In("handler").Code("publish_failed").With("event_type", "session.added").With("session_id", envelope.AggregateID).Wrap(err)
+			return err
 		}
 
 		h.logger.Info().
