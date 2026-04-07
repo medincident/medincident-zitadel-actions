@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/go-redsync/redsync/v4"
 	fiberzerolog "github.com/gofiber/contrib/v3/zerolog"
 	"github.com/gofiber/fiber/v3"
 	"github.com/nats-io/nats.go"
@@ -46,6 +47,10 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	if err != nil {
 		return nil, err
 	}
+	rs, err := do.Invoke[*redsync.Redsync](injector)
+	if err != nil {
+		return nil, err
+	}
 
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  10 * time.Second,
@@ -63,8 +68,8 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	post := app.Group("", middleware.ContentType(), middleware.HMACVerify(cfg.SigningKey, cfg.SigningKeyTolerance))
 
 	post.Post("/debug", handler.PostDebugWebhook(logger))
-	post.Post("/events/user/human/added", handler.PostHumanUserAdded(logger, js, cfg.Publish))
-	post.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(logger, js, cfg.Publish))
+	post.Post("/events/user/human/added", handler.PostHumanUserAdded(logger, js, rs, cfg))
+	post.Post("/events/user/human/profile/changed", handler.PostHumanUserProfileChanged(logger, js, rs, cfg))
 
 	return &fiberWrapper{app: app}, nil
 }
