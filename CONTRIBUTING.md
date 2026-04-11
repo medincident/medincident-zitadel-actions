@@ -51,7 +51,8 @@ pre-commit run --all-files
 ## Частые команды
 
 ```bash
-task generate          # генерация proto и Go enum кода
+task gen               # генерация proto и Go enum кода
+task gen:check         # перегенерация и проверка, что gen/ не разъехался (гейт в CI)
 task fmt               # форматирование protobuf
 task fmt:check         # проверка форматирования (dry-run, без модификаций)
 task lint              # lint protobuf и Go

@@ -53,7 +53,8 @@ test/integration/zitadel/                   — integration tests (testcontainer
 ## Tooling
 
 ```bash
-task generate          # buf generate from remote proto repo + go generate
+task gen               # buf generate from remote proto repo + go generate
+task gen:check         # regenerate and fail if gen/ drifts from committed code (CI gate)
 task lint              # golangci-lint
 task test:integration  # integration tests via testcontainers (requires Docker)
 ```
@@ -149,7 +150,7 @@ Proto source lives in `github.com/medincident/medincident-proto` (remote repo).
 `buf.gen.yaml` in project root fetches protos via `git_repo` input and generates Go code into `gen/`.
 Generated packages: `gen/zitadel/events/v1/`, `gen/zitadel/users/v1/`, and `gen/zitadel/sessions/v1/`.
 The `buf.gen.yaml` input filter lists exactly these three packages under `paths:` so only the Zitadel passthrough tree is generated — no `rm -rf` hacks in the Taskfile.
-Run `task generate` to regenerate.
+Run `task gen` to regenerate.
 
 ---
 
