@@ -4,12 +4,19 @@ import (
 	"errors"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/samber/oops"
 	"gopkg.in/yaml.v3"
 )
+
+// validate is the single app-scope validator instance. A package-level
+// var rather than a builder function — there is no hidden state to
+// reason about (validator.Validate is safe for concurrent use) and
+// every Read call reuses the same cached struct metadata.
+var validate = validator.New(validator.WithRequiredStructEnabled())
 
 const (
 	ErrCodeConfigReadFailed      = "read_failed"
@@ -89,13 +96,6 @@ func defaultConfig() Config {
 	}
 }
 
-// newValidator returns a configured validator instance. A new one is
-// created per Read call rather than stored as package state so
-// there's no hidden global to reason about.
-func newValidator() *validator.Validate {
-	return validator.New(validator.WithRequiredStructEnabled())
-}
-
 // formatValidationErrors walks validator.ValidationErrors and returns a
 // sorted []string like "Nats.URL: required", "Redis.LockExpiry: min=1s".
 // If err is not validator.ValidationErrors, returns []string{err.Error()}.
@@ -108,15 +108,10 @@ func formatValidationErrors(err error) []string {
 	msgs := make([]string, 0, len(ve))
 	for _, fe := range ve {
 		// StructNamespace looks like "Config.Nats.URL" — strip the root type prefix.
-		ns := fe.StructNamespace()
-		dot := len("Config.")
-		if len(ns) > dot {
-			ns = ns[dot:]
-		}
+		ns := strings.TrimPrefix(fe.StructNamespace(), "Config.")
 
 		tag := fe.Tag()
-		param := fe.Param()
-		if param != "" {
+		if param := fe.Param(); param != "" {
 			tag = tag + "=" + param
 		}
 
@@ -150,7 +145,7 @@ func Read(path string) (*Config, error) {
 			Wrap(err)
 	}
 
-	if err := newValidator().Struct(&cfg); err != nil {
+	if err := validate.Struct(&cfg); err != nil {
 		return nil, oops.
 			In("config").
 			Code(ErrCodeConfigValidateFailed).
