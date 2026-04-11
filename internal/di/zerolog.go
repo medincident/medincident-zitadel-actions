@@ -32,7 +32,7 @@ type loggerWrapper struct {
 
 func (w *loggerWrapper) Shutdown(_ context.Context) error {
 	if err := w.cleanup(); err != nil {
-		return oops.In("di/zerolog").Code(ErrCodeZerologCleanupFailed).Wrap(err)
+		return oops.In("di.zerolog").Code(ErrCodeZerologCleanupFailed).Wrap(err)
 	}
 	return nil
 }
@@ -60,7 +60,7 @@ func ProvideZerolog(injector do.Injector) (*zerolog.Logger, error) {
 }
 
 func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, error) {
-	eb := oops.In("di/zerolog")
+	eb := oops.In("di.zerolog")
 
 	globalLevel, err := zerolog.ParseLevel(string(cfg.Level))
 	if err != nil {
