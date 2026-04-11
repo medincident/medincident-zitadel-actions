@@ -37,6 +37,7 @@ go.work.sum
 
 .claude/settings.local.json
 .claude/skills/
+.claude/*.lock
 .agents/skills/
 drafts/
 /docs/superpowers/
