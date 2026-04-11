@@ -31,10 +31,6 @@ func baseEnvelope[T any](payload T) *zitadel.Envelope[T] {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// TestBuildUserHumanAdded
-// ---------------------------------------------------------------------------
-
 func TestBuildUserHumanAdded(t *testing.T) {
 	env := baseEnvelope(zitadel.UserHumanAdded{
 		UserName:          "jdoe",
@@ -60,10 +56,6 @@ func TestBuildUserHumanAdded(t *testing.T) {
 	assert.Equal(t, "JD", msg.GetNickName())
 	require.NotNil(t, msg.NickName)
 }
-
-// ---------------------------------------------------------------------------
-// TestBuildUserHumanProfileChangedFullJSON
-// ---------------------------------------------------------------------------
 
 func TestBuildUserHumanProfileChangedFullJSON(t *testing.T) {
 	nick := "JD"
@@ -108,10 +100,6 @@ func TestBuildUserHumanProfileChangedFullJSON(t *testing.T) {
 	}, paths)
 }
 
-// ---------------------------------------------------------------------------
-// TestBuildUserHumanProfileChangedPartial
-// ---------------------------------------------------------------------------
-
 func TestBuildUserHumanProfileChangedPartial(t *testing.T) {
 	nick := "JD"
 	env := baseEnvelope(zitadel.UserHumanProfileChanged{
@@ -132,10 +120,6 @@ func TestBuildUserHumanProfileChangedPartial(t *testing.T) {
 	require.NotNil(t, msg.UpdatedFields)
 	assert.Equal(t, []string{"nick_name"}, msg.UpdatedFields.GetPaths())
 }
-
-// ---------------------------------------------------------------------------
-// TestBuildUserHumanProfileChangedNickNameCleared
-// ---------------------------------------------------------------------------
 
 func TestBuildUserHumanProfileChangedNickNameCleared(t *testing.T) {
 	env := baseEnvelope(zitadel.UserHumanProfileChanged{
@@ -158,10 +142,6 @@ func TestBuildUserHumanProfileChangedNickNameCleared(t *testing.T) {
 	assert.Nil(t, msg.NickName)
 }
 
-// ---------------------------------------------------------------------------
-// TestBuildUserHumanEmailChanged
-// ---------------------------------------------------------------------------
-
 func TestBuildUserHumanEmailChanged(t *testing.T) {
 	env := baseEnvelope(zitadel.UserHumanEmailChanged{Email: "new@example.com"})
 	env.EventType = "user.human.email.changed"
@@ -171,10 +151,6 @@ func TestBuildUserHumanEmailChanged(t *testing.T) {
 	assert.Equal(t, "new@example.com", msg.GetEmail())
 }
 
-// ---------------------------------------------------------------------------
-// TestBuildUserHumanEmailVerified
-// ---------------------------------------------------------------------------
-
 func TestBuildUserHumanEmailVerified(t *testing.T) {
 	env := baseEnvelope(zitadel.UserHumanEmailVerified{})
 	env.EventType = "user.human.email.verified"
@@ -183,10 +159,6 @@ func TestBuildUserHumanEmailVerified(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, msg)
 }
-
-// ---------------------------------------------------------------------------
-// TestBuildSessionAddedWithUserAgent
-// ---------------------------------------------------------------------------
 
 func TestBuildSessionAddedWithUserAgent(t *testing.T) {
 	fp := "fp-abc"
@@ -220,10 +192,6 @@ func TestBuildSessionAddedWithUserAgent(t *testing.T) {
 	assert.ElementsMatch(t, []string{"en-US"}, hdrs["Accept-Language"].GetValues())
 }
 
-// ---------------------------------------------------------------------------
-// TestBuildSessionAddedWithoutUserAgent
-// ---------------------------------------------------------------------------
-
 func TestBuildSessionAddedWithoutUserAgent(t *testing.T) {
 	env := baseEnvelope(zitadel.SessionAdded{UserAgent: nil})
 	env.AggregateType = "session"
@@ -233,10 +201,6 @@ func TestBuildSessionAddedWithoutUserAgent(t *testing.T) {
 	require.NoError(t, err)
 	assert.Nil(t, msg.UserAgent)
 }
-
-// ---------------------------------------------------------------------------
-// TestBuildSessionUserChecked
-// ---------------------------------------------------------------------------
 
 func TestBuildSessionUserChecked(t *testing.T) {
 	lang := "de"
@@ -260,10 +224,6 @@ func TestBuildSessionUserChecked(t *testing.T) {
 	assert.Equal(t, "de", msg.GetPreferredLanguage())
 	require.NotNil(t, msg.PreferredLanguage)
 }
-
-// ---------------------------------------------------------------------------
-// TestBuildEnvelope
-// ---------------------------------------------------------------------------
 
 func TestBuildEnvelope(t *testing.T) {
 	env := &zitadel.Envelope[zitadel.UserHumanAdded]{

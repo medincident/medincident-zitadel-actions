@@ -13,13 +13,18 @@ import (
 )
 
 const (
-	// signatureHeader is the HTTP header Zitadel uses for webhook signatures.
 	signatureHeader = "ZITADEL-Signature"
 )
 
-// HMACVerify returns a Fiber middleware that validates the Zitadel webhook
-// HMAC-SHA256 signature. If signingKey is empty, the middleware is a no-op
-// (useful for development).
+// HMACVerify validates the Zitadel webhook signature header
+// (ZITADEL-Signature: t=<unix>,v1=<hex>,...). The MAC input is
+// "<t>.<body>" keyed by signingKey, compared in constant time against
+// every v1 signature in the header. Requests older than tolerance (or
+// in the future by more than tolerance) are rejected to mitigate
+// replay. If signingKey is empty the middleware becomes a no-op, which
+// is intended only for local development.
+//
+// See https://zitadel.com/docs/guides/integrate/actions/testing-request-signature
 func HMACVerify(signingKey string, tolerance time.Duration) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		if signingKey == "" {
@@ -36,7 +41,6 @@ func HMACVerify(signingKey string, tolerance time.Duration) fiber.Handler {
 			return fiber.ErrUnauthorized
 		}
 
-		// Replay protection.
 		age := time.Since(time.Unix(ts, 0))
 		if age < 0 {
 			age = -age
@@ -45,7 +49,6 @@ func HMACVerify(signingKey string, tolerance time.Duration) fiber.Handler {
 			return fiber.ErrUnauthorized
 		}
 
-		// Compute expected signature.
 		body := c.Body()
 		mac := hmac.New(sha256.New, []byte(signingKey))
 		fmt.Fprintf(mac, "%d", ts)
@@ -53,7 +56,6 @@ func HMACVerify(signingKey string, tolerance time.Duration) fiber.Handler {
 		mac.Write(body)
 		expected := mac.Sum(nil)
 
-		// Constant-time comparison against all v1 signatures.
 		for _, sig := range signatures {
 			decoded, err := hex.DecodeString(sig)
 			if err != nil {
@@ -68,7 +70,9 @@ func HMACVerify(signingKey string, tolerance time.Duration) fiber.Handler {
 	}
 }
 
-// parseSignatureHeader parses "t=123,v1=abc,v1=def" into timestamp and signature list.
+// parseSignatureHeader parses "t=<unix>,v1=<hex>,v1=<hex>,..." into the
+// timestamp and the list of v1 signatures. Unknown keys are ignored so
+// future scheme versions do not break the parser.
 func parseSignatureHeader(header string) (ts int64, signatures []string, err error) {
 	tsFound := false
 
@@ -102,7 +106,8 @@ func parseSignatureHeader(header string) (ts int64, signatures []string, err err
 	return ts, signatures, nil
 }
 
-// ComputeSignatureHeader builds a ZITADEL-Signature header value for testing.
+// ComputeSignatureHeader builds a ZITADEL-Signature header value. It is
+// only used by tests; production never signs outbound requests.
 func ComputeSignatureHeader(t time.Time, payload []byte, signingKey string) string {
 	mac := hmac.New(sha256.New, []byte(signingKey))
 	fmt.Fprintf(mac, "%d", t.Unix())

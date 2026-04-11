@@ -9,9 +9,6 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
 
-// Error codes emitted by this handler. Declared at file level so
-// each emit site is grep-local; string values carry the handler name
-// so interceptors can distinguish per-event telemetry.
 const (
 	ErrCodeSessionAddedBindFailed = "bind_failed"
 	ErrCodeSessionAddedMapFailed  = "map_failed"
@@ -19,7 +16,6 @@ const (
 
 const subjectSessionAdded = "zitadel.sessions.v1.added"
 
-// PostSessionAdded handles POST /events/session/added.
 func (h *EventHandler) PostSessionAdded() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		envelope := new(zitadel.Envelope[zitadel.SessionAdded])

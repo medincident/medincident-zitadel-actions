@@ -17,14 +17,11 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 )
 
-// Error codes emitted by this DI init. Declared at file level so each emit site
-// is grep-local; string values carry the component name so interceptors can
-// distinguish per-component telemetry.
 const ErrCodeZerologCleanupFailed = "cleanup_failed"
 
-// loggerWrapper holds the logger and a cleanup function that closes file handles.
-// It implements do.ShutdownerWithContextAndError so samber/do calls Shutdown
-// when the injector shuts down.
+// loggerWrapper owns the configured logger and the file-handle cleanup
+// closure produced by buildZerolog. Shutdown runs the cleanup so any
+// file output (e.g. a log file) is flushed and closed on exit.
 type loggerWrapper struct {
 	logger  *zerolog.Logger
 	cleanup func() error
@@ -37,7 +34,6 @@ func (w *loggerWrapper) Shutdown(_ context.Context) error {
 	return nil
 }
 
-// ProvideLoggerWrapper is a samber/do provider for *loggerWrapper.
 func ProvideLoggerWrapper(injector do.Injector) (*loggerWrapper, error) {
 	cfg, err := do.Invoke[*config.Config](injector)
 	if err != nil {
@@ -50,7 +46,6 @@ func ProvideLoggerWrapper(injector do.Injector) (*loggerWrapper, error) {
 	return &loggerWrapper{logger: logger, cleanup: cleanup}, nil
 }
 
-// ProvideZerolog is a samber/do provider for *zerolog.Logger.
 func ProvideZerolog(injector do.Injector) (*zerolog.Logger, error) {
 	w, err := do.Invoke[*loggerWrapper](injector)
 	if err != nil {
@@ -67,7 +62,6 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 		return nil, nil, eb.Code("invalid_level").Errorf("invalid log level %q", cfg.Level)
 	}
 
-	// Build outputs.
 	var (
 		outputs   []zerolog.LevelWriter
 		closers   []io.Closer
@@ -123,7 +117,6 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 		}
 	}
 
-	// Compose multi-writer.
 	var w io.Writer
 	switch len(outputs) {
 	case 0:
@@ -138,7 +131,6 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 		w = zerolog.MultiLevelWriter(ws...)
 	}
 
-	// Set zerolog package-level globals.
 	zerolog.TimeFieldFormat = cfg.TimeFormat
 	zerolog.ErrorMarshalFunc = oopszerolog.OopsMarshalFunc
 	zerolog.ErrorStackMarshaler = oopszerolog.OopsStackMarshaller
@@ -146,7 +138,6 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 		zerolog.TimestampFunc = func() time.Time { return time.Now().UTC() }
 	}
 
-	// Build logger.
 	logger := zerolog.New(w).Level(globalLevel)
 	ctx := logger.With()
 
@@ -165,7 +156,6 @@ func buildZerolog(cfg *config.ZerologConfig) (*zerolog.Logger, func() error, err
 		ctx = ctx.Str(key, value)
 	}
 
-	// Build cleanup.
 	cleanup := func() error { return nil }
 	if len(closers) > 0 {
 		cleanup = func() error {
@@ -191,7 +181,6 @@ func consoleTarget(target config.ZerologConsoleTarget) *os.File {
 }
 
 func buildOutputWriter(w io.Writer, out *config.ZerologOutputConfig, globalTimeFormat string) zerolog.LevelWriter {
-	// Resolve per-output time format.
 	tf := globalTimeFormat
 	if out.TimeFormat != "" {
 		tf = out.TimeFormat
@@ -215,7 +204,6 @@ func buildOutputWriter(w io.Writer, out *config.ZerologOutputConfig, globalTimeF
 		base = zerolog.LevelWriterAdapter{Writer: w}
 	}
 
-	// Per-output level filtering.
 	if out.Level != "" {
 		level, err := zerolog.ParseLevel(string(out.Level))
 		if err == nil && level > zerolog.TraceLevel {

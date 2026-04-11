@@ -1,7 +1,8 @@
 package zitadel
 
 // UserHumanAdded is the payload of the user.human.added Zitadel event.
-// See: https://zitadel.com/docs/guides/integrate/actions/testing-event#example-call
+//
+// See https://zitadel.com/docs/guides/integrate/actions/testing-event
 type UserHumanAdded struct {
 	UserName          string `json:"userName"`
 	FirstName         string `json:"firstName"`
@@ -13,10 +14,12 @@ type UserHumanAdded struct {
 	Email             string `json:"email"`
 }
 
-// UserHumanProfileChanged is the payload of the user.human.profile.changed Zitadel event.
-// For FieldMask building we use raw JSON key presence detection (see mapper).
-// NickName is a pointer because JSON null means "cleared"; value types use
-// presence detection via the raw body instead.
+// UserHumanProfileChanged is the payload of the user.human.profile.changed
+// Zitadel event. Only the fields that actually changed are present in the
+// JSON body, which is why the mapper rebuilds a FieldMask from the raw
+// request bytes via JSON key presence. NickName is a *string because a
+// JSON null means "cleared"; the other fields rely on raw-body key
+// detection because Go value types cannot distinguish absent from zero.
 type UserHumanProfileChanged struct {
 	FirstName         string  `json:"firstName"`
 	LastName          string  `json:"lastName"`

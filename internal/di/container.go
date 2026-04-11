@@ -12,7 +12,9 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 )
 
-// NewContainer wires all providers and returns a ready-to-invoke injector.
+// NewContainer wires every provider and returns a ready-to-invoke
+// injector. Provider order here is irrelevant — samber/do resolves
+// dependencies lazily on Invoke.
 func NewContainer(cfg *config.Config) (do.Injector, error) {
 	injector := do.New()
 

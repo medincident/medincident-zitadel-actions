@@ -11,9 +11,6 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
 
-// Error codes emitted by this handler. Declared at file level so
-// each emit site is grep-local; string values carry the handler name
-// so interceptors can distinguish per-event telemetry.
 const (
 	ErrCodeUserHumanProfileChangedBindFailed = "bind_failed"
 	ErrCodeUserHumanProfileChangedMapFailed  = "map_failed"
@@ -21,10 +18,12 @@ const (
 
 const subjectUserHumanProfileChanged = "zitadel.users.v1.human.profile.changed"
 
-// PostHumanUserProfileChanged handles POST /events/user/human/profile/changed.
+// PostHumanUserProfileChanged handles profile updates. The raw body is
+// cloned before binding so the mapper can rebuild a FieldMask from the
+// original JSON key set (Zitadel only sends the fields that changed, and
+// value-type Go fields cannot distinguish "zero" from "absent").
 func (h *EventHandler) PostHumanUserProfileChanged() fiber.Handler {
 	return func(c fiber.Ctx) error {
-		// Capture raw body before bind (bind may consume/modify the body buffer).
 		rawBody := slices.Clone(c.Body())
 
 		envelope := new(zitadel.Envelope[zitadel.UserHumanProfileChanged])

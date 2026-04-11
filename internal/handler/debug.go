@@ -7,8 +7,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// PostDebugWebhook returns a handler that logs the raw JSON body of any
-// Zitadel webhook. For debugging only — no binding, no publishing.
+// PostDebugWebhook logs the raw JSON body of any Zitadel webhook it
+// receives and returns 200. For local inspection only — no binding,
+// no publishing, no HMAC check happens here (the middleware still
+// runs upstream).
 func PostDebugWebhook(logger *zerolog.Logger) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		event := logger.Info().

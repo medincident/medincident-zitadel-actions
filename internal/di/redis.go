@@ -10,8 +10,8 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 )
 
-// redisClientWrapper holds *redis.Client and implements
-// do.ShutdownerWithContextAndError.
+// redisClientWrapper owns the *redis.Client lifecycle so samber/do can
+// Close it on injector shutdown.
 type redisClientWrapper struct {
 	client *redis.Client
 }
@@ -20,7 +20,6 @@ func (w *redisClientWrapper) Shutdown(_ context.Context) error {
 	return w.client.Close()
 }
 
-// ProvideRedisClientWrapper is a samber/do provider for *redisClientWrapper.
 func ProvideRedisClientWrapper(injector do.Injector) (*redisClientWrapper, error) {
 	cfg, err := do.Invoke[*config.Config](injector)
 	if err != nil {
@@ -42,7 +41,6 @@ func ProvideRedisClientWrapper(injector do.Injector) (*redisClientWrapper, error
 	return &redisClientWrapper{client: client}, nil
 }
 
-// ProvideRedisClient is a samber/do provider for *redis.Client.
 func ProvideRedisClient(injector do.Injector) (*redis.Client, error) {
 	w, err := do.Invoke[*redisClientWrapper](injector)
 	if err != nil {

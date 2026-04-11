@@ -1,3 +1,6 @@
+// Package publish wraps Zitadel webhook payloads in the versioned
+// zitadel.events.v1.Envelope protobuf and publishes them on NATS
+// JetStream with deduplication and exponential-backoff retry.
 package publish
 
 import (
@@ -17,28 +20,27 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
 
-// Error codes emitted by this publisher. Declared at file level so each emit
-// site is grep-local; string values carry the publisher name so interceptors
-// can distinguish per-publish telemetry.
 const (
 	ErrCodePublishAnyPBNewFailed    = "anypb_new_failed"
 	ErrCodePublishMarshalFailed     = "marshal_failed"
 	ErrCodePublishNATSPublishFailed = "nats_publish_failed"
 )
 
-// Publisher publishes Zitadel events to NATS JetStream with retry.
+// Publisher publishes Zitadel events to NATS JetStream with
+// exponential-backoff retry. It holds no mutable state and is safe for
+// concurrent use.
 type Publisher struct {
 	logger *zerolog.Logger
 	js     jetstream.JetStream
 	cfg    config.PublishConfig
 }
 
-// NewPublisher creates a new Publisher.
 func NewPublisher(logger *zerolog.Logger, js jetstream.JetStream, cfg config.PublishConfig) *Publisher {
 	return &Publisher{logger: logger, js: js, cfg: cfg}
 }
 
-// ZitadelMetadata holds the envelope-level fields from a Zitadel webhook.
+// ZitadelMetadata is the envelope-level subset of a Zitadel webhook that
+// Publisher copies onto the outbound protobuf envelope.
 type ZitadelMetadata struct {
 	AggregateID   string
 	AggregateType string
@@ -51,7 +53,6 @@ type ZitadelMetadata struct {
 	CreatedAt     *timestamppb.Timestamp
 }
 
-// FromZitadelEnvelope extracts metadata from a typed Zitadel envelope.
 func FromZitadelEnvelope[T any](e *zitadel.Envelope[T]) *ZitadelMetadata {
 	return &ZitadelMetadata{
 		AggregateID:   e.AggregateID,
@@ -66,13 +67,21 @@ func FromZitadelEnvelope[T any](e *zitadel.Envelope[T]) *ZitadelMetadata {
 	}
 }
 
-// dedupMsgID builds the NATS dedup key: "{instance}:{type}:{id}:{seq}".
+// dedupMsgID builds the Nats-Msg-Id used for JetStream deduplication:
+// "{instance}:{aggregate_type}:{aggregate_id}:{sequence}". Zitadel
+// guarantees sequence monotonicity per aggregate, so retries of the
+// same event collapse to a single stored message within the stream's
+// duplicate window.
 func dedupMsgID(instanceID, aggregateType, aggregateID string, sequence uint64) string {
 	return fmt.Sprintf("%s:%s:%s:%d", instanceID, aggregateType, aggregateID, sequence)
 }
 
-// PublishZitadelEvent wraps the payload in a zitadel.events.v1.Envelope and
-// publishes it to NATS JetStream with deduplication and exponential backoff retry.
+// PublishZitadelEvent wraps payload in a zitadel.events.v1.Envelope,
+// marshals it and publishes it on subject with the dedup key set via
+// [jetstream.WithMsgID]. Transient NATS errors are retried with
+// exponential backoff bounded by config.PublishConfig.
+//
+// See https://docs.nats.io/using-nats/developer/develop_jetstream/model_deep_dive
 func (p *Publisher) PublishZitadelEvent(ctx context.Context, subject string, meta *ZitadelMetadata, payload proto.Message) error {
 	pb, err := anypb.New(payload)
 	if err != nil {

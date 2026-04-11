@@ -1,3 +1,6 @@
+// Package handler holds the Fiber HTTP handlers for Zitadel Actions v2
+// webhooks. Each handler binds a typed [zitadel.Envelope], maps the
+// payload to a protobuf message and publishes it via [publish.Publisher].
 package handler
 
 import (
@@ -11,7 +14,9 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 )
 
-// EventHandler handles Zitadel webhook events with distributed locking and publishing.
+// EventHandler owns the cross-cutting dependencies shared by every
+// per-event handler method: the logger, the NATS publisher, the Redlock
+// client and the application config.
 type EventHandler struct {
 	logger *zerolog.Logger
 	pub    *publish.Publisher
@@ -19,13 +24,14 @@ type EventHandler struct {
 	cfg    *config.Config
 }
 
-// NewEventHandler creates an EventHandler.
 func NewEventHandler(logger *zerolog.Logger, pub *publish.Publisher, rs *redsync.Redsync, cfg *config.Config) *EventHandler {
 	return &EventHandler{logger: logger, pub: pub, rs: rs, cfg: cfg}
 }
 
-// withMutex acquires a distributed lock for the given aggregate, executes fn,
-// and releases the lock. Guarantees per-aggregate ordering of publishes.
+// withMutex serializes handling per aggregate so that concurrent
+// webhooks for the same aggregate can never publish out of sequence.
+// The lock key is scoped by aggregate type and ID; the NATS JetStream
+// Nats-Msg-Id dedup header provides the final idempotency guarantee.
 func (h *EventHandler) withMutex(ctx context.Context, aggregateType, aggregateID string, fn func() error) error {
 	mutex := h.rs.NewMutex(
 		fmt.Sprintf("%s%s:%s", h.cfg.Redis.LockPrefix, aggregateType, aggregateID),

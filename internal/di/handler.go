@@ -10,7 +10,6 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 )
 
-// ProvideEventHandler is a samber/do provider for *handler.EventHandler.
 func ProvideEventHandler(injector do.Injector) (*handler.EventHandler, error) {
 	logger, err := do.Invoke[*zerolog.Logger](injector)
 	if err != nil {

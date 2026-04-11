@@ -419,8 +419,6 @@ func extractPAT(ctx context.Context, c testcontainers.Container) (string, error)
 	return "", fmt.Errorf("PAT not found in container logs (%d lines)", len(lines))
 }
 
-// --- Zitadel API helpers ---
-
 func zitadelAPI(path string, body any) (map[string]any, error) {
 	var r io.Reader
 	if body != nil {
@@ -635,8 +633,6 @@ func fetchNATSMessage(t *testing.T, subject string) *eventsv1.Envelope {
 
 	return envelope
 }
-
-// --- Test Cases ---
 
 func TestHealthCheck(t *testing.T) {
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/health", servicePort), http.NoBody)

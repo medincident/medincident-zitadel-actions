@@ -12,12 +12,10 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 )
 
-// Error codes emitted by this DI init. Declared at file level so each emit site
-// is grep-local; string values carry the component name so interceptors can
-// distinguish per-component telemetry.
 const ErrCodeNATSConnectFailed = "connect_failed"
 
-// natsConnWrapper holds *nats.Conn and implements do.ShutdownerWithContextAndError.
+// natsConnWrapper owns the *nats.Conn lifecycle. Shutdown calls Drain
+// so in-flight publishes complete before the process exits.
 type natsConnWrapper struct {
 	conn *nats.Conn
 }
@@ -26,7 +24,6 @@ func (w *natsConnWrapper) Shutdown(_ context.Context) error {
 	return w.conn.Drain()
 }
 
-// ProvideNatsConnWrapper is a samber/do provider for *natsConnWrapper.
 func ProvideNatsConnWrapper(injector do.Injector) (*natsConnWrapper, error) {
 	cfg, err := do.Invoke[*config.Config](injector)
 	if err != nil {
@@ -56,7 +53,6 @@ func ProvideNatsConnWrapper(injector do.Injector) (*natsConnWrapper, error) {
 	return &natsConnWrapper{conn: nc}, nil
 }
 
-// ProvideNatsConn is a samber/do provider for *nats.Conn.
 func ProvideNatsConn(injector do.Injector) (*nats.Conn, error) {
 	w, err := do.Invoke[*natsConnWrapper](injector)
 	if err != nil {
@@ -65,7 +61,6 @@ func ProvideNatsConn(injector do.Injector) (*nats.Conn, error) {
 	return w.conn, nil
 }
 
-// ProvideJetStream is a samber/do provider for jetstream.JetStream.
 func ProvideJetStream(injector do.Injector) (jetstream.JetStream, error) {
 	nc, err := do.Invoke[*nats.Conn](injector)
 	if err != nil {

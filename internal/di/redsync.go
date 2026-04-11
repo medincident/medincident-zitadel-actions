@@ -7,7 +7,6 @@ import (
 	"github.com/samber/do/v2"
 )
 
-// ProvideRedsync is a samber/do provider for *redsync.Redsync.
 func ProvideRedsync(injector do.Injector) (*redsync.Redsync, error) {
 	client, err := do.Invoke[*goredislib.Client](injector)
 	if err != nil {

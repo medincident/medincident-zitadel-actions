@@ -18,8 +18,9 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/middleware"
 )
 
-// fiberWrapper holds *fiber.App and implements do.ShutdownerWithContextAndError
-// so samber/do gracefully shuts down the HTTP server.
+// fiberWrapper owns the Fiber App lifecycle. It implements
+// do.ShutdownerWithContextAndError so samber/do drains in-flight
+// requests via ShutdownWithContext on injector shutdown.
 type fiberWrapper struct {
 	app *fiber.App
 }
@@ -28,7 +29,6 @@ func (w *fiberWrapper) Shutdown(ctx context.Context) error {
 	return w.app.ShutdownWithContext(ctx)
 }
 
-// ProvideFiberWrapper is a samber/do provider for *fiberWrapper.
 func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	cfg, err := do.Invoke[*config.Config](injector)
 	if err != nil {
@@ -60,10 +60,8 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 
 	app.Use(fiberzerolog.New(fiberzerolog.Config{Logger: logger}))
 
-	// Health check (no middleware).
 	app.Get("/health", handler.HealthCheck(nc, rc))
 
-	// POST routes with ContentType + HMAC middleware.
 	post := app.Group("", middleware.ContentType(), middleware.HMACVerify(cfg.SigningKey, cfg.SigningKeyTolerance))
 
 	post.Post("/debug", handler.PostDebugWebhook(logger))
@@ -77,8 +75,10 @@ func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	return &fiberWrapper{app: app}, nil
 }
 
-// errorHandler returns a Fiber ErrorHandler that distinguishes between
-// client errors (*fiber.Error) and internal errors (oops / unknown).
+// errorHandler returns a Fiber ErrorHandler that routes *fiber.Error
+// to the client with its declared status and body while logging every
+// other error (including oops-wrapped internal failures) and replying
+// with a bare 500. Client responses never expose internal error text.
 func errorHandler(logger *zerolog.Logger) fiber.ErrorHandler {
 	return func(c fiber.Ctx, err error) error {
 		var fe *fiber.Error
@@ -88,7 +88,6 @@ func errorHandler(logger *zerolog.Logger) fiber.ErrorHandler {
 			})
 		}
 
-		// Log internal errors with oops context for debugging.
 		if oopsErr, ok := oops.AsOops(err); ok {
 			logger.Error().
 				Str("method", c.Method()).
@@ -107,13 +106,10 @@ func errorHandler(logger *zerolog.Logger) fiber.ErrorHandler {
 				Msg("internal error")
 		}
 
-		// Never leak internals to the client.
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 }
 
-// ProvideFiberApp is a samber/do provider for *fiber.App.
-// It delegates to *fiberWrapper, which owns the lifecycle.
 func ProvideFiberApp(injector do.Injector) (*fiber.App, error) {
 	w, err := do.Invoke[*fiberWrapper](injector)
 	if err != nil {

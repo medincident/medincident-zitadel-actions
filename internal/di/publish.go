@@ -9,7 +9,6 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 )
 
-// ProvidePublisher is a samber/do provider for *publish.Publisher.
 func ProvidePublisher(injector do.Injector) (*publish.Publisher, error) {
 	logger, err := do.Invoke[*zerolog.Logger](injector)
 	if err != nil {

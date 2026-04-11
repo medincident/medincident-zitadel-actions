@@ -1,3 +1,6 @@
+// Package mapper converts Zitadel webhook payloads into the versioned
+// protobuf messages emitted on NATS. Mappers are intentionally thin:
+// they copy and enum-translate, never reshape or filter.
 package mapper
 
 import (
@@ -16,16 +19,14 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
 
-// Error codes emitted by this mapper. Declared at file level so each emit site
-// is grep-local; string values carry the mapper name so interceptors can
-// distinguish per-mapper telemetry.
 const (
 	ErrCodeMapperParseRawBodyFailed = "parse_raw_body_failed"
 	ErrCodeMapperAnyPBNewFailed     = "anypb_new_failed"
 )
 
-// profileFieldOrder maps Zitadel camelCase JSON keys to proto snake_case field names
-// in proto declaration order, ensuring deterministic FieldMask.Paths across calls.
+// profileFieldOrder pairs each Zitadel camelCase JSON key with its
+// proto snake_case field name in proto declaration order. Iterating it
+// yields deterministic FieldMask.Paths regardless of JSON object order.
 var profileFieldOrder = []struct {
 	jsonKey, protoField string
 }{
@@ -37,7 +38,6 @@ var profileFieldOrder = []struct {
 	{"nickName", "nick_name"},
 }
 
-// BuildUserHumanAdded converts a Zitadel UserHumanAdded event into a proto message.
 func BuildUserHumanAdded(env *zitadel.Envelope[zitadel.UserHumanAdded]) (*usersv1.UserHumanAdded, error) {
 	p := &env.EventPayload
 
@@ -58,13 +58,16 @@ func BuildUserHumanAdded(env *zitadel.Envelope[zitadel.UserHumanAdded]) (*usersv
 	return msg, nil
 }
 
-// BuildUserHumanProfileChanged converts a Zitadel UserHumanProfileChanged event into a proto message.
-// rawBody is the raw HTTP request body used for FieldMask building via JSON key presence detection.
+// BuildUserHumanProfileChanged maps a profile-changed envelope. rawBody
+// is the untouched request body: it is reparsed here to detect which
+// event_payload keys were present, so that the output FieldMask lists
+// exactly the fields the webhook reported as changed. The decoded env
+// is still the source of values — rawBody is only used for key
+// presence, not for deserialization.
 func BuildUserHumanProfileChanged(
 	rawBody []byte,
 	env *zitadel.Envelope[zitadel.UserHumanProfileChanged],
 ) (*usersv1.UserHumanProfileChanged, error) {
-	// Parse raw body to detect which keys are actually present.
 	var parsed struct {
 		EventPayload map[string]json.RawMessage `json:"event_payload"`
 	}
@@ -99,20 +102,17 @@ func BuildUserHumanProfileChanged(
 	return msg, nil
 }
 
-// BuildUserHumanEmailChanged converts a Zitadel UserHumanEmailChanged event into a proto message.
 func BuildUserHumanEmailChanged(env *zitadel.Envelope[zitadel.UserHumanEmailChanged]) (*usersv1.UserHumanEmailChanged, error) {
 	return &usersv1.UserHumanEmailChanged{
 		Email: env.EventPayload.Email,
 	}, nil
 }
 
-// BuildUserHumanEmailVerified converts a Zitadel UserHumanEmailVerified event into a proto message.
 func BuildUserHumanEmailVerified(env *zitadel.Envelope[zitadel.UserHumanEmailVerified]) (*usersv1.UserHumanEmailVerified, error) {
 	_ = env
 	return &usersv1.UserHumanEmailVerified{}, nil
 }
 
-// BuildSessionAdded converts a Zitadel SessionAdded event into a proto message.
 func BuildSessionAdded(env *zitadel.Envelope[zitadel.SessionAdded]) (*sessionsv1.SessionAdded, error) {
 	p := &env.EventPayload
 
@@ -142,7 +142,6 @@ func BuildSessionAdded(env *zitadel.Envelope[zitadel.SessionAdded]) (*sessionsv1
 	return msg, nil
 }
 
-// BuildSessionUserChecked converts a Zitadel SessionUserChecked event into a proto message.
 func BuildSessionUserChecked(env *zitadel.Envelope[zitadel.SessionUserChecked]) (*sessionsv1.SessionUserChecked, error) {
 	p := &env.EventPayload
 
@@ -159,8 +158,10 @@ func BuildSessionUserChecked(env *zitadel.Envelope[zitadel.SessionUserChecked]) 
 	return msg, nil
 }
 
-// BuildEnvelope wraps a proto payload in a zitadel.events.v1.Envelope,
-// copying all fields from the Zitadel webhook envelope.
+// BuildEnvelope wraps payload in a zitadel.events.v1.Envelope and
+// copies every passthrough field from src. Production publishing goes
+// through [publish.Publisher]; this helper exists for tests and any
+// future caller that needs the wrapped envelope without publishing.
 func BuildEnvelope[T any](src *zitadel.Envelope[T], payload proto.Message) (*eventsv1.Envelope, error) {
 	pb, err := anypb.New(payload)
 	if err != nil {
@@ -181,7 +182,9 @@ func BuildEnvelope[T any](src *zitadel.Envelope[T], payload proto.Message) (*eve
 	}, nil
 }
 
-// mapGender converts a Zitadel gender integer (internal/domain.Gender) into a proto Gender enum.
+// mapGender translates Zitadel's internal Gender integer into the
+// versioned proto enum. Values follow Zitadel's domain.Gender:
+// 1=female, 2=male, 3=diverse; anything else maps to UNSPECIFIED.
 func mapGender(g int) usersv1.Gender {
 	switch g {
 	case 1:

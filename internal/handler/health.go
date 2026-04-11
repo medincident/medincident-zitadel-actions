@@ -6,8 +6,9 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// HealthCheck returns a handler that reports service health.
-// Returns 200 if all dependencies are healthy, 503 otherwise.
+// HealthCheck returns a handler that reports NATS and Redis reachability.
+// All dependencies healthy -> 200; any dependency degraded -> 503 with a
+// JSON body describing which one failed.
 func HealthCheck(nc *nats.Conn, rc *redis.Client) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		status := fiber.Map{}
