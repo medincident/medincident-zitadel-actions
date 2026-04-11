@@ -687,10 +687,19 @@ func TestUserHumanAdded(t *testing.T) {
 	// Verify NATS message published.
 	natsEnvelope := fetchNATSMessage(t, "zitadel.users.v1.human.added")
 
+	// Full envelope audit: verify every passthrough field survives the
+	// Zitadel -> Go struct -> proto Any -> NATS -> proto round-trip.
+	// Other event tests only spot-check a subset; this one locks all 10.
 	assert.Equal(t, "user", natsEnvelope.GetAggregateType())
-	assert.NotNil(t, natsEnvelope.GetCreatedAt())
-	assert.NotEmpty(t, natsEnvelope.GetAggregateId())
 	assert.Equal(t, "user.human.added", natsEnvelope.GetEventType())
+	assert.NotNil(t, natsEnvelope.GetCreatedAt())
+	assert.False(t, natsEnvelope.GetCreatedAt().AsTime().IsZero())
+	assert.NotEmpty(t, natsEnvelope.GetAggregateId())
+	assert.NotEmpty(t, natsEnvelope.GetResourceOwner(), "resource_owner (Zitadel org id) must be forwarded")
+	assert.NotEmpty(t, natsEnvelope.GetInstanceId(), "instance_id must be forwarded")
+	assert.NotEmpty(t, natsEnvelope.GetVersion(), "aggregate version must be forwarded")
+	assert.Positive(t, natsEnvelope.GetSequence(), "sequence must be a positive Zitadel event number")
+	assert.NotEmpty(t, natsEnvelope.GetUserId(), "user_id (Zitadel editor) must be forwarded")
 
 	// Unpack the payload and verify UserHumanAdded fields.
 	var payload usersv1.UserHumanAdded
