@@ -33,7 +33,10 @@ func run() error {
 		return err
 	}
 
-	injector := di.NewContainer(cfg)
+	injector, err := di.NewContainer(cfg)
+	if err != nil {
+		return err
+	}
 	defer func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
