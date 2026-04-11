@@ -1,5 +1,9 @@
 version: "2"
 
+run:
+  timeout: 5m
+  tests: true
+
 linters:
   enable:
     - bodyclose
@@ -15,6 +19,7 @@ linters:
     - nilerr
     - nilnil
     - noctx
+    - nolintlint
     - prealloc
     - predeclared
     - revive
@@ -61,16 +66,24 @@ linters:
       - linters: [gosec]
         text: "G304"
     paths:
-      - pkg
+      - gen
 
 formatters:
   enable:
-    - gofmt
+    - gofumpt
     - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/medincident/medincident-zitadel-actions
   exclusions:
     generated: lax
     paths:
-      - pkg
+      - gen
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
 
 output:
   sort-order:

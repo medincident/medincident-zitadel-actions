@@ -36,7 +36,7 @@ tasks:
   test:integration:
     desc: Run integration tests (requires Docker)
     cmds:
-      - go test -tags=integration -count=1 -timeout=10m -v ./test/integration/zitadel/
+      - go test -tags=integration -count=1 -timeout=10m -v ./test/integration/...
 
   test:
     desc: Run the full test suite (unit + integration)

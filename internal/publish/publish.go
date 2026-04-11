@@ -111,7 +111,7 @@ func (p *Publisher) PublishZitadelEvent(ctx context.Context, subject string, met
 
 	maxRetries := uint64(0)
 	if p.cfg.MaxRetries > 0 {
-		maxRetries = uint64(p.cfg.MaxRetries) //nolint:gosec // MaxRetries is validated positive by config defaults
+		maxRetries = uint64(p.cfg.MaxRetries)
 	}
 	retryable := backoff.WithMaxRetries(b, maxRetries)
 
@@ -119,7 +119,6 @@ func (p *Publisher) PublishZitadelEvent(ctx context.Context, subject string, met
 		_, pubErr := p.js.Publish(ctx, subject, data, jetstream.WithMsgID(msgID))
 		return pubErr
 	}, backoff.WithContext(retryable, ctx))
-
 	if err != nil {
 		p.logger.Warn().
 			Str("subject", subject).
