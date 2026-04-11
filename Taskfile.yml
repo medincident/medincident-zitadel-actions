@@ -13,6 +13,16 @@ tasks:
       - task: gen
       - git diff --exit-code -- gen/
 
+  fmt:
+    desc: Format Go code (gofmt + goimports via golangci-lint)
+    cmds:
+      - go tool golangci-lint fmt
+
+  fmt:check:
+    desc: Verify Go code is formatted (fails if `task fmt` would produce changes)
+    cmds:
+      - go tool golangci-lint fmt --diff
+
   lint:
     desc: Lint Go code
     cmds:

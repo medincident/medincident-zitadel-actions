@@ -40,6 +40,7 @@ jobs:
         with:
           version: 3.x
       - run: task gen:check
+      - run: task fmt:check
       - run: task lint
       - run: task vuln
       - run: task test

@@ -55,6 +55,8 @@ test/integration/zitadel/                   — integration tests (testcontainer
 ```bash
 task gen               # buf generate from remote proto repo + go generate
 task gen:check         # regenerate and fail if gen/ drifts from committed code (CI gate)
+task fmt               # format Go code (gofmt + goimports via golangci-lint)
+task fmt:check         # verify Go code is formatted (CI gate, dry-run)
 task lint              # golangci-lint
 task test:integration  # integration tests via testcontainers (requires Docker)
 ```

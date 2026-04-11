@@ -11,15 +11,15 @@ repos:
   - repo: local
     hooks:
       - id: task-fmt-check
-        name: buf format check
+        name: Go format check
         entry: task
         args: [fmt:check]
         language: system
-        files: '\.proto$'
+        files: '\.go$'
         pass_filenames: false
 
       - id: task-lint
-        name: lint (proto + Go)
+        name: lint (Go)
         entry: task
         args: [lint]
         language: system

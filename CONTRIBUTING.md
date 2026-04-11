@@ -41,8 +41,8 @@ pre-commit run --all-files
 
 **На коммит:**
 - **Whitespace и формат** — trailing whitespace, EOF fixer, YAML validation, large files, merge conflicts
-- **Форматирование protobuf** — `task fmt:check` (только при изменении `.proto` файлов)
-- **Lint** — `task lint` (protobuf + Go)
+- **Форматирование Go** — `task fmt:check` (только при изменении `.go` файлов)
+- **Lint** — `task lint` (Go)
 
 **На push:**
 - **Юнит-тесты** — `task test:unit`
@@ -53,11 +53,9 @@ pre-commit run --all-files
 ```bash
 task gen               # генерация proto и Go enum кода
 task gen:check         # перегенерация и проверка, что gen/ не разъехался (гейт в CI)
-task fmt               # форматирование protobuf
+task fmt               # форматирование Go (gofmt + goimports через golangci-lint)
 task fmt:check         # проверка форматирования (dry-run, без модификаций)
-task lint              # lint protobuf и Go
-task lint:proto        # lint только protobuf
-task lint:go           # lint только Go
+task lint              # lint Go (golangci-lint)
 task vuln              # проверка уязвимостей Go
 task test:unit         # юнит-тесты
 task test:integration  # интеграционные тесты (требует Docker)
