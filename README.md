@@ -7,7 +7,7 @@ HTTP-шлюз между Zitadel Actions v2 и доменными микросе
 значений — событие публикуется на своём subject'е со всеми полями,
 которые прислал Zitadel.
 
-## Actions v2 Targets
+## Actions v2 таргеты
 
 | Endpoint | Zitadel Event | NATS Subject |
 |----------|---------------|--------------|
@@ -18,7 +18,7 @@ HTTP-шлюз между Zitadel Actions v2 и доменными микросе
 | `POST /events/session/added` | `session.added` | `zitadel.sessions.v1.added` |
 | `POST /events/session/user/checked` | `session.user.checked` | `zitadel.sessions.v1.user.checked` |
 | `POST /debug` | любой | — (логирование raw body) |
-| `GET /health` | — | — (проверка здоровья) |
+| `GET /health` | — | — (health check) |
 
 `user.human.profile.changed` публикует одно сообщение с `FieldMask`
 внутри payload'а (`UserHumanProfileChanged.updated_fields`) — маска
@@ -42,4 +42,4 @@ JetStream использует его для дедупликации ретра
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, pre-commit hooks, and available tasks.
+См. [CONTRIBUTING.md](CONTRIBUTING.md) — инструкции по установке, pre-commit хуки и доступные task'и.

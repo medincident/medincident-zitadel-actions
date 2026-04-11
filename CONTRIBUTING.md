@@ -1,15 +1,15 @@
 # Contributing
 
-## Prerequisites
+## Требования
 
 - [Go 1.26+](https://go.dev/dl/)
-- [Task](https://taskfile.dev/installation/) (task runner)
-- [pre-commit](https://pre-commit.com/#install) (git hooks manager)
-- [Docker](https://docs.docker.com/get-docker/) (for integration tests)
+- [Task](https://taskfile.dev/installation/) — task runner
+- [pre-commit](https://pre-commit.com/#install) — git hook manager
+- [Docker](https://docs.docker.com/get-docker/) — для интеграционных тестов
 
-## Getting Started
+## Старт
 
-1. Clone the repository and install pre-commit hooks:
+1. Склонируй репу и поставь pre-commit хуки:
 
 ```bash
 git clone https://github.com/medincident/medincident-zitadel-actions.git
@@ -17,48 +17,48 @@ cd medincident-zitadel-actions
 pre-commit install --hook-type pre-commit --hook-type pre-push
 ```
 
-2. Verify everything works:
+2. Проверь, что всё работает:
 
 ```bash
 task test
 ```
 
-## Pre-commit Hooks
+## Pre-commit хуки
 
-This project uses [pre-commit](https://pre-commit.com/) to run checks before each commit. After installing pre-commit, run:
+Проект использует [pre-commit](https://pre-commit.com/) для прогона проверок перед каждым коммитом. После установки pre-commit выполни:
 
 ```bash
 pre-commit install --hook-type pre-commit --hook-type pre-push
 ```
 
-To run all hooks manually against all files:
+Запуск всех хуков руками по всем файлам:
 
 ```bash
 pre-commit run --all-files
 ```
 
-The following hooks are configured:
+Настроенные хуки:
 
-**On commit:**
-- **Whitespace & formatting** — trailing whitespace, end-of-file fixer, YAML validation, large files, merge conflicts
-- **Protobuf formatting** — `task fmt:check` (only when `.proto` files change)
+**На коммит:**
+- **Whitespace и формат** — trailing whitespace, EOF fixer, YAML validation, large files, merge conflicts
+- **Форматирование protobuf** — `task fmt:check` (только при изменении `.proto` файлов)
 - **Lint** — `task lint` (protobuf + Go)
 
-**On push:**
-- **Unit tests** — `task test:unit`
-- **Vulnerability check** — `task vuln`
+**На push:**
+- **Юнит-тесты** — `task test:unit`
+- **Проверка уязвимостей** — `task vuln`
 
-## Common Tasks
+## Частые команды
 
 ```bash
-task generate          # Generate protobuf and Go enum code
-task fmt               # Format protobuf definitions
-task fmt:check         # Dry-run format check (no files modified)
-task lint              # Lint protobuf and Go code
-task lint:proto        # Lint protobuf only
-task lint:go           # Lint Go code only
-task vuln              # Run Go vulnerability check
-task test:unit         # Run unit tests
-task test:integration  # Run integration tests (requires Docker)
-task test              # Run the full test suite (unit + integration)
+task generate          # генерация proto и Go enum кода
+task fmt               # форматирование protobuf
+task fmt:check         # проверка форматирования (dry-run, без модификаций)
+task lint              # lint protobuf и Go
+task lint:proto        # lint только protobuf
+task lint:go           # lint только Go
+task vuln              # проверка уязвимостей Go
+task test:unit         # юнит-тесты
+task test:integration  # интеграционные тесты (требует Docker)
+task test              # полный набор тестов (unit + integration)
 ```
