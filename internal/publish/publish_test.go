@@ -49,9 +49,9 @@ func (f *fakeJetStream) Publish(_ context.Context, subject string, data []byte, 
 func testConfig() config.PublishConfig {
 	return config.PublishConfig{
 		MaxRetries:     3,
-		InitialBackoff: config.Duration(1 * time.Millisecond),
-		MaxBackoff:     config.Duration(5 * time.Millisecond),
-		MaxElapsedTime: config.Duration(200 * time.Millisecond),
+		InitialBackoff: 1 * time.Millisecond,
+		MaxBackoff:     5 * time.Millisecond,
+		MaxElapsedTime: 200 * time.Millisecond,
 	}
 }
 

@@ -288,13 +288,13 @@ func startService() error {
 	cfg := &config.Config{
 		Redis: config.RedisConfig{
 			LockPrefix: "test:lock:",
-			LockExpiry: config.Duration(30 * time.Second),
+			LockExpiry: 30 * time.Second,
 		},
 		Publish: config.PublishConfig{
 			MaxRetries:     3,
-			InitialBackoff: config.Duration(100 * time.Millisecond),
-			MaxBackoff:     config.Duration(1 * time.Second),
-			MaxElapsedTime: config.Duration(5 * time.Second),
+			InitialBackoff: 100 * time.Millisecond,
+			MaxBackoff:     1 * time.Second,
+			MaxElapsedTime: 5 * time.Second,
 		},
 	}
 
@@ -1011,9 +1011,9 @@ func TestDedupByMsgID(t *testing.T) {
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 	cfg := config.PublishConfig{
 		MaxRetries:     1,
-		InitialBackoff: config.Duration(50 * time.Millisecond),
-		MaxBackoff:     config.Duration(200 * time.Millisecond),
-		MaxElapsedTime: config.Duration(1 * time.Second),
+		InitialBackoff: 50 * time.Millisecond,
+		MaxBackoff:     200 * time.Millisecond,
+		MaxElapsedTime: 1 * time.Second,
 	}
 	pub := publish.NewPublisher(&logger, js, cfg)
 

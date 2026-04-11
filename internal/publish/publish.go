@@ -105,9 +105,9 @@ func (p *Publisher) PublishZitadelEvent(ctx context.Context, subject string, met
 	msgID := dedupMsgID(meta.InstanceID, meta.AggregateType, meta.AggregateID, meta.Sequence)
 
 	b := backoff.NewExponentialBackOff()
-	b.InitialInterval = p.cfg.InitialBackoff.Duration()
-	b.MaxInterval = p.cfg.MaxBackoff.Duration()
-	b.MaxElapsedTime = p.cfg.MaxElapsedTime.Duration()
+	b.InitialInterval = p.cfg.InitialBackoff
+	b.MaxInterval = p.cfg.MaxBackoff
+	b.MaxElapsedTime = p.cfg.MaxElapsedTime
 
 	maxRetries := uint64(0)
 	if p.cfg.MaxRetries > 0 {

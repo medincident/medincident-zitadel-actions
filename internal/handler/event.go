@@ -29,7 +29,7 @@ func NewEventHandler(logger *zerolog.Logger, pub *publish.Publisher, rs *redsync
 func (h *EventHandler) withMutex(ctx context.Context, aggregateType, aggregateID string, fn func() error) error {
 	mutex := h.rs.NewMutex(
 		fmt.Sprintf("%s%s:%s", h.cfg.Redis.LockPrefix, aggregateType, aggregateID),
-		redsync.WithExpiry(h.cfg.Redis.LockExpiry.Duration()),
+		redsync.WithExpiry(h.cfg.Redis.LockExpiry),
 	)
 
 	if err := mutex.LockContext(ctx); err != nil {
