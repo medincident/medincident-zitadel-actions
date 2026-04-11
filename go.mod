@@ -1,6 +1,6 @@
 module github.com/medincident/medincident-zitadel-actions
 
-go 1.26.1
+go 1.26.2
 
 tool (
 	github.com/abice/go-enum
@@ -15,7 +15,6 @@ require (
 	github.com/go-redsync/redsync/v4 v4.16.0
 	github.com/gofiber/contrib/v3/zerolog v1.0.1
 	github.com/gofiber/fiber/v3 v3.1.0
-	github.com/google/uuid v1.6.0
 	github.com/nats-io/nats.go v1.50.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/rs/zerolog v1.35.0
@@ -169,6 +168,7 @@ require (
 	github.com/google/cel-go v0.27.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-containerregistry v0.21.3 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gordonklaus/ineffassign v0.2.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect
 	github.com/gostaticanalysis/comment v1.5.0 // indirect
