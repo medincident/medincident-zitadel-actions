@@ -17,6 +17,11 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 )
 
+// Error codes emitted by this DI init. Declared at file level so each emit site
+// is grep-local; string values carry the component name so interceptors can
+// distinguish per-component telemetry.
+const ErrCodeZerologCleanupFailed = "zerolog_cleanup_failed"
+
 // loggerWrapper holds the logger and a cleanup function that closes file handles.
 // It implements do.ShutdownerWithContextAndError so samber/do calls Shutdown
 // when the injector shuts down.
@@ -27,7 +32,7 @@ type loggerWrapper struct {
 
 func (w *loggerWrapper) Shutdown(_ context.Context) error {
 	if err := w.cleanup(); err != nil {
-		return oops.In("di/zerolog").Code("cleanup_failed").Wrap(err)
+		return oops.In("di/zerolog").Code(ErrCodeZerologCleanupFailed).Wrap(err)
 	}
 	return nil
 }

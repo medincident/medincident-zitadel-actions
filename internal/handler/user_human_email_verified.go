@@ -5,24 +5,35 @@ import (
 	"github.com/samber/oops"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/mapper"
+	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
+
+// Error codes emitted by this handler. Declared at file level so
+// each emit site is grep-local; string values carry the handler name
+// so interceptors can distinguish per-event telemetry.
+const (
+	ErrCodeUserHumanEmailVerifiedBindFailed = "user_human_email_verified_bind_failed"
+	ErrCodeUserHumanEmailVerifiedMapFailed  = "user_human_email_verified_map_failed"
+)
+
+const subjectUserHumanEmailVerified = "zitadel.users.v1.human.email.verified"
 
 // PostHumanUserEmailVerified handles POST /events/user/human/email/verified.
 func (h *EventHandler) PostHumanUserEmailVerified() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		envelope := new(zitadel.Envelope[zitadel.UserHumanEmailVerified])
 		if err := c.Bind().Body(envelope); err != nil {
-			return oops.In("handler").Code("bind_failed").With("event_type", "user.human.email.verified").Wrap(err)
+			return oops.In("handler").Code(ErrCodeUserHumanEmailVerifiedBindFailed).With("event_type", "user.human.email.verified").Wrap(err)
 		}
 
 		err := h.withMutex(c.Context(), envelope.AggregateType, envelope.AggregateID, func() error {
-			events, err := mapper.MapUserEmailVerified(envelope)
+			payload, err := mapper.BuildUserHumanEmailVerified(envelope)
 			if err != nil {
-				return oops.In("handler").Code("map_failed").With("event_type", "user.human.email.verified").With("user_id", envelope.UserID).Wrap(err)
+				return oops.In("handler").Code(ErrCodeUserHumanEmailVerifiedMapFailed).With("event_type", "user.human.email.verified").With("user_id", envelope.UserID).Wrap(err)
 			}
 
-			return h.pub.Publish(c.Context(), events)
+			return h.pub.PublishZitadelEvent(c.Context(), subjectUserHumanEmailVerified, publish.FromZitadelEnvelope(envelope), payload)
 		})
 		if err != nil {
 			return err

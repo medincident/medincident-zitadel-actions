@@ -147,7 +147,8 @@ envelope.EventPayload.FirstName
 
 Proto source lives in `github.com/medincident/medincident-proto` (remote repo).
 `buf.gen.yaml` in project root fetches protos via `git_repo` input and generates Go code into `gen/`.
-Generated packages: `gen/medincident/events/v1/`, `gen/medincident/sessions/v1/`, and `gen/medincident/users/v1/`.
+Generated packages: `gen/zitadel/events/v1/`, `gen/zitadel/users/v1/`, and `gen/zitadel/sessions/v1/`.
+The `buf.gen.yaml` input filter lists exactly these three packages under `paths:` so only the Zitadel passthrough tree is generated — no `rm -rf` hacks in the Taskfile.
 Run `task generate` to regenerate.
 
 ---
@@ -155,11 +156,13 @@ Run `task generate` to regenerate.
 ## Event mapping pipeline
 
 1. Zitadel webhook → handler binds `Envelope[T]`
-2. Handler calls mapper (`internal/mapper/`) → `[]MappedEvent` (subject + proto message)
-3. Handler calls `publish.PublishEvents()` → wraps in `eventsv1.Envelope` with `google.protobuf.Any`, publishes to NATS JetStream
-4. NATS subjects: `medincident.users.v1.created`, `medincident.users.v1.name_changed`, `medincident.sessions.v1.created`, etc.
+2. Handler calls a thin `mapper.Build*` function that returns a single typed proto message (no splitting, no value remapping)
+3. Handler calls `publish.PublishZitadelEvent` → wraps the payload in `zitadel.events.v1.Envelope`, marshals it, and publishes on the mapped NATS subject with a `Nats-Msg-Id` dedup header set via `jetstream.WithMsgID`
+4. NATS subject scheme: `zitadel.<aggregate_plural>.v1.<event_tail>` with the Zitadel event-type dots preserved — e.g. `zitadel.users.v1.human.profile.changed`, `zitadel.sessions.v1.user.checked`
 
-Profile changes are split into sub-events based on which fields are non-nil (pointer detection).
+Profile changes are **not** split — a single `UserHumanProfileChanged` payload carries all changed fields plus a `google.protobuf.FieldMask updated_fields` listing which fields were actually in the webhook body. Consumers check the mask to know what changed.
+
+Dedup key: `{instance_id}:{aggregate_type}:{aggregate_id}:{sequence}`. Publisher-side retries are idempotent because JetStream dedups by this key within the stream's duplicate window (recommend 24h; the stream itself is provisioned by operators, not by this service).
 
 ---
 

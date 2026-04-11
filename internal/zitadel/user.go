@@ -11,19 +11,19 @@ type UserHumanAdded struct {
 	PreferredLanguage string `json:"preferredLanguage"`
 	Gender            int    `json:"gender"`
 	Email             string `json:"email"`
-	Phone             string `json:"phone"`
-	EncodedHash       string `json:"encodedHash"`
 }
 
 // UserHumanProfileChanged is the payload of the user.human.profile.changed Zitadel event.
-// Fields are pointers because Zitadel only sends changed fields; nil means unchanged.
+// For FieldMask building we use raw JSON key presence detection (see mapper).
+// NickName is a pointer because JSON null means "cleared"; value types use
+// presence detection via the raw body instead.
 type UserHumanProfileChanged struct {
-	FirstName         *string `json:"firstName"`
-	LastName          *string `json:"lastName"`
+	FirstName         string  `json:"firstName"`
+	LastName          string  `json:"lastName"`
 	NickName          *string `json:"nickName"`
-	DisplayName       *string `json:"displayName"`
-	PreferredLanguage *string `json:"preferredLanguage"`
-	Gender            *int    `json:"gender"`
+	DisplayName       string  `json:"displayName"`
+	PreferredLanguage string  `json:"preferredLanguage"`
+	Gender            int     `json:"gender"`
 }
 
 // UserHumanEmailChanged is the payload of the user.human.email.changed Zitadel event.

@@ -5,24 +5,35 @@ import (
 	"github.com/samber/oops"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/mapper"
+	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
+
+// Error codes emitted by this handler. Declared at file level so
+// each emit site is grep-local; string values carry the handler name
+// so interceptors can distinguish per-event telemetry.
+const (
+	ErrCodeSessionAddedBindFailed = "session_added_bind_failed"
+	ErrCodeSessionAddedMapFailed  = "session_added_map_failed"
+)
+
+const subjectSessionAdded = "zitadel.sessions.v1.added"
 
 // PostSessionAdded handles POST /events/session/added.
 func (h *EventHandler) PostSessionAdded() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		envelope := new(zitadel.Envelope[zitadel.SessionAdded])
 		if err := c.Bind().Body(envelope); err != nil {
-			return oops.In("handler").Code("bind_failed").With("event_type", "session.added").Wrap(err)
+			return oops.In("handler").Code(ErrCodeSessionAddedBindFailed).With("event_type", "session.added").Wrap(err)
 		}
 
 		err := h.withMutex(c.Context(), envelope.AggregateType, envelope.AggregateID, func() error {
-			events, err := mapper.MapSessionAdded(envelope)
+			payload, err := mapper.BuildSessionAdded(envelope)
 			if err != nil {
-				return oops.In("handler").Code("map_failed").With("event_type", "session.added").With("session_id", envelope.AggregateID).Wrap(err)
+				return oops.In("handler").Code(ErrCodeSessionAddedMapFailed).With("event_type", "session.added").With("session_id", envelope.AggregateID).Wrap(err)
 			}
 
-			return h.pub.Publish(c.Context(), events)
+			return h.pub.PublishZitadelEvent(c.Context(), subjectSessionAdded, publish.FromZitadelEnvelope(envelope), payload)
 		})
 		if err != nil {
 			return err

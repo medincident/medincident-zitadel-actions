@@ -50,6 +50,15 @@ redis:
   # lock_expiry: 30s
 
 # NATS JetStream publish retry settings.
+#
+# Stream provisioning is NOT done by this service — operators must
+# create the target JetStream stream out-of-band. Recommended config:
+#   name:        zitadel
+#   subjects:    ["zitadel.>"]
+#   duplicates:  24h
+# The publisher sets a Nats-Msg-Id header of the form
+#   {instance_id}:{aggregate_type}:{aggregate_id}:{sequence}
+# so JetStream deduplicates retries within the duplicate window.
 publish:
   # Maximum number of publish retry attempts before giving up.
   # Default: 5

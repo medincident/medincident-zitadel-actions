@@ -1,11 +1,13 @@
 version: v2
+
 inputs:
   - git_repo: https://github.com/medincident/medincident-proto.git
     subdir: api/proto
     paths:
-      - medincident/events/v1
-      - medincident/sessions/v1
-      - medincident/users/v1
+      - zitadel/events/v1
+      - zitadel/users/v1
+      - zitadel/sessions/v1
+
 plugins:
   - local:
       - go
@@ -14,7 +16,10 @@ plugins:
     out: gen
     opt:
       - paths=source_relative
-      - Mmedincident/events/v1/envelope.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/events/v1
-      - Mmedincident/sessions/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/sessions/v1
-      - Mmedincident/users/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1
-      - Mmedincident/users/v1/types.proto=github.com/medincident/medincident-zitadel-actions/gen/medincident/users/v1
+      # Go import paths provided via M-mappings so proto files stay
+      # language-agnostic in the medincident-proto monorepo.
+      - Mzitadel/events/v1/envelope.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/events/v1
+      - Mzitadel/users/v1/types.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/users/v1
+      - Mzitadel/users/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/users/v1
+      - Mzitadel/sessions/v1/types.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/sessions/v1
+      - Mzitadel/sessions/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/sessions/v1

@@ -11,6 +11,11 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 )
 
+// Error codes emitted by this DI init. Declared at file level so each emit site
+// is grep-local; string values carry the component name so interceptors can
+// distinguish per-component telemetry.
+const ErrCodeRedisConnectFailed = "redis_connect_failed"
+
 // redisClientWrapper holds *redis.Client and implements do.ShutdownerWithContextAndError.
 type redisClientWrapper struct {
 	client *redis.Client
@@ -39,7 +44,7 @@ func ProvideRedisClientWrapper(injector do.Injector) (*redisClientWrapper, error
 
 	if err := client.Ping(context.Background()).Err(); err != nil {
 		_ = client.Close()
-		return nil, oops.In("redis").Code("connect_failed").With("address", cfg.Redis.Address).Wrap(err)
+		return nil, oops.In("redis").Code(ErrCodeRedisConnectFailed).With("address", cfg.Redis.Address).Wrap(err)
 	}
 
 	logger.Info().Str("address", cfg.Redis.Address).Msg("connected to Redis")

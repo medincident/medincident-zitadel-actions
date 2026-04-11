@@ -12,6 +12,11 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 )
 
+// Error codes emitted by this DI init. Declared at file level so each emit site
+// is grep-local; string values carry the component name so interceptors can
+// distinguish per-component telemetry.
+const ErrCodeNATSConnectFailed = "nats_connect_failed"
+
 // natsConnWrapper holds *nats.Conn and implements do.ShutdownerWithContextAndError.
 type natsConnWrapper struct {
 	conn *nats.Conn
@@ -43,7 +48,7 @@ func ProvideNatsConnWrapper(injector do.Injector) (*natsConnWrapper, error) {
 		}),
 	)
 	if err != nil {
-		return nil, oops.In("nats").Code("connect_failed").With("url", cfg.Nats.URL).Wrap(err)
+		return nil, oops.In("nats").Code(ErrCodeNATSConnectFailed).With("url", cfg.Nats.URL).Wrap(err)
 	}
 
 	logger.Info().Str("url", cfg.Nats.URL).Msg("connected to NATS")

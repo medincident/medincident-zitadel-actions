@@ -5,24 +5,35 @@ import (
 	"github.com/samber/oops"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/mapper"
+	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
+
+// Error codes emitted by this handler. Declared at file level so
+// each emit site is grep-local; string values carry the handler name
+// so interceptors can distinguish per-event telemetry.
+const (
+	ErrCodeUserHumanEmailChangedBindFailed = "user_human_email_changed_bind_failed"
+	ErrCodeUserHumanEmailChangedMapFailed  = "user_human_email_changed_map_failed"
+)
+
+const subjectUserHumanEmailChanged = "zitadel.users.v1.human.email.changed"
 
 // PostHumanUserEmailChanged handles POST /events/user/human/email/changed.
 func (h *EventHandler) PostHumanUserEmailChanged() fiber.Handler {
 	return func(c fiber.Ctx) error {
 		envelope := new(zitadel.Envelope[zitadel.UserHumanEmailChanged])
 		if err := c.Bind().Body(envelope); err != nil {
-			return oops.In("handler").Code("bind_failed").With("event_type", "user.human.email.changed").Wrap(err)
+			return oops.In("handler").Code(ErrCodeUserHumanEmailChangedBindFailed).With("event_type", "user.human.email.changed").Wrap(err)
 		}
 
 		err := h.withMutex(c.Context(), envelope.AggregateType, envelope.AggregateID, func() error {
-			events, err := mapper.MapUserEmailChanged(envelope)
+			payload, err := mapper.BuildUserHumanEmailChanged(envelope)
 			if err != nil {
-				return oops.In("handler").Code("map_failed").With("event_type", "user.human.email.changed").With("user_id", envelope.UserID).Wrap(err)
+				return oops.In("handler").Code(ErrCodeUserHumanEmailChangedMapFailed).With("event_type", "user.human.email.changed").With("user_id", envelope.UserID).Wrap(err)
 			}
 
-			return h.pub.Publish(c.Context(), events)
+			return h.pub.PublishZitadelEvent(c.Context(), subjectUserHumanEmailChanged, publish.FromZitadelEnvelope(envelope), payload)
 		})
 		if err != nil {
 			return err
