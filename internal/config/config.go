@@ -1,46 +1,55 @@
 package config
 
 import (
+	"errors"
 	"os"
+	"sort"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/samber/oops"
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	ErrCodeConfigReadFailed      = "read_failed"
+	ErrCodeConfigUnmarshalFailed = "unmarshal_failed"
+	ErrCodeConfigValidateFailed  = "validate_failed"
+)
+
 // Config is the root application configuration.
 type Config struct {
-	Address             string        `yaml:"address"`
+	Address             string        `yaml:"address" validate:"required,hostname_port"`
 	SigningKey          string        `yaml:"signing_key"`
-	SigningKeyTolerance time.Duration `yaml:"signing_key_tolerance"`
-	Nats                NatsConfig    `yaml:"nats"`
-	Redis               RedisConfig   `yaml:"redis"`
-	Publish             PublishConfig `yaml:"publish"`
-	Zerolog             ZerologConfig `yaml:"zerolog"`
+	SigningKeyTolerance time.Duration `yaml:"signing_key_tolerance" validate:"required,min=1s,max=1h"`
+	Nats                NatsConfig    `yaml:"nats" validate:"required"`
+	Redis               RedisConfig   `yaml:"redis" validate:"required"`
+	Publish             PublishConfig `yaml:"publish" validate:"required"`
+	Zerolog             ZerologConfig `yaml:"zerolog" validate:"required"`
 }
 
 // NatsConfig holds NATS connection settings.
 type NatsConfig struct {
-	URL           string        `yaml:"url"`
-	MaxReconnects int           `yaml:"max_reconnects"`
-	ReconnectWait time.Duration `yaml:"reconnect_wait"`
+	URL           string        `yaml:"url" validate:"required,url"`
+	MaxReconnects int           `yaml:"max_reconnects" validate:"min=-1"`
+	ReconnectWait time.Duration `yaml:"reconnect_wait" validate:"required,min=100ms"`
 }
 
 // RedisConfig holds Redis connection and distributed lock settings.
 type RedisConfig struct {
-	Address    string        `yaml:"address"`
+	Address    string        `yaml:"address" validate:"required,hostname_port"`
 	Password   string        `yaml:"password"`
-	DB         int           `yaml:"db"`
-	LockPrefix string        `yaml:"lock_prefix"`
-	LockExpiry time.Duration `yaml:"lock_expiry"`
+	DB         int           `yaml:"db" validate:"min=0,max=15"`
+	LockPrefix string        `yaml:"lock_prefix" validate:"required"`
+	LockExpiry time.Duration `yaml:"lock_expiry" validate:"required,min=1s,max=5m"`
 }
 
 // PublishConfig holds NATS JetStream publish retry settings.
 type PublishConfig struct {
-	MaxRetries     uint          `yaml:"max_retries"`
-	InitialBackoff time.Duration `yaml:"initial_backoff"`
-	MaxBackoff     time.Duration `yaml:"max_backoff"`
-	MaxElapsedTime time.Duration `yaml:"max_elapsed_time"`
+	MaxRetries     uint          `yaml:"max_retries" validate:"min=0,max=100"`
+	InitialBackoff time.Duration `yaml:"initial_backoff" validate:"required,min=1ms"`
+	MaxBackoff     time.Duration `yaml:"max_backoff" validate:"required,min=1ms,gtefield=InitialBackoff"`
+	MaxElapsedTime time.Duration `yaml:"max_elapsed_time" validate:"required,min=10ms,gtefield=MaxBackoff"`
 }
 
 func defaultConfig() Config {
@@ -80,6 +89,44 @@ func defaultConfig() Config {
 	}
 }
 
+// newValidator returns a configured validator instance. A new one is
+// created per Read call rather than stored as package state so
+// there's no hidden global to reason about.
+func newValidator() *validator.Validate {
+	return validator.New(validator.WithRequiredStructEnabled())
+}
+
+// formatValidationErrors walks validator.ValidationErrors and returns a
+// sorted []string like "Nats.URL: required", "Redis.LockExpiry: min=1s".
+// If err is not validator.ValidationErrors, returns []string{err.Error()}.
+func formatValidationErrors(err error) []string {
+	var ve validator.ValidationErrors
+	if !errors.As(err, &ve) {
+		return []string{err.Error()}
+	}
+
+	msgs := make([]string, 0, len(ve))
+	for _, fe := range ve {
+		// StructNamespace looks like "Config.Nats.URL" — strip the root type prefix.
+		ns := fe.StructNamespace()
+		dot := len("Config.")
+		if len(ns) > dot {
+			ns = ns[dot:]
+		}
+
+		tag := fe.Tag()
+		param := fe.Param()
+		if param != "" {
+			tag = tag + "=" + param
+		}
+
+		msgs = append(msgs, ns+": "+tag)
+	}
+
+	sort.Strings(msgs)
+	return msgs
+}
+
 // Read loads a YAML config file from path and expands ${VAR} / $VAR
 // references in its content using the current process environment.
 func Read(path string) (*Config, error) {
@@ -87,7 +134,7 @@ func Read(path string) (*Config, error) {
 	if err != nil {
 		return nil, oops.
 			In("config").
-			Code("read_failed").
+			Code(ErrCodeConfigReadFailed).
 			With("path", path).
 			Wrap(err)
 	}
@@ -98,8 +145,17 @@ func Read(path string) (*Config, error) {
 	if err := yaml.Unmarshal([]byte(expanded), &cfg); err != nil {
 		return nil, oops.
 			In("config").
-			Code("unmarshal_failed").
+			Code(ErrCodeConfigUnmarshalFailed).
 			With("path", path).
+			Wrap(err)
+	}
+
+	if err := newValidator().Struct(&cfg); err != nil {
+		return nil, oops.
+			In("config").
+			Code(ErrCodeConfigValidateFailed).
+			With("path", path).
+			With("violations", formatValidationErrors(err)).
 			Wrap(err)
 	}
 

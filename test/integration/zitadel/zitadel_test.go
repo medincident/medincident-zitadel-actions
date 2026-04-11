@@ -46,6 +46,8 @@ var (
 	zitadelBaseURL string
 	pat            string
 	servicePort    int
+	hmacPort       int
+	hmacListener   net.Listener
 
 	debugCh              = make(chan []byte, 10)
 	userAddedCh          = make(chan []byte, 10)
@@ -237,7 +239,7 @@ func setup(ctx context.Context) error {
 					FileMode:          0o644,
 				},
 			},
-			HostAccessPorts: []int{servicePort},
+			HostAccessPorts: []int{servicePort, hmacPort},
 			WaitingFor: wait.ForHTTP("/debug/healthz").
 				WithPort("8080/tcp").
 				WithStartupTimeout(360 * time.Second).
@@ -352,12 +354,23 @@ func startService() error {
 	}
 	servicePort = ln.Addr().(*net.TCPAddr).Port
 
+	// Reserve a second port for TestHMACVerificationEndToEnd BEFORE the
+	// Zitadel container starts so it can be included in HostAccessPorts
+	// and Zitadel can reach a Fiber instance that the test itself
+	// spins up with the Zitadel-generated signing key.
+	hmacListener, err = (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		return fmt.Errorf("listen for hmac test: %w", err)
+	}
+	hmacPort = hmacListener.Addr().(*net.TCPAddr).Port
+
 	go func() {
 		_ = app.Listener(ln)
 	}()
 
 	cleanupFuncs = append(cleanupFuncs, func() {
 		_ = app.Shutdown()
+		_ = hmacListener.Close()
 	})
 
 	fmt.Printf("Service listening on 127.0.0.1:%d\n", servicePort)
@@ -1058,4 +1071,80 @@ func TestDedupByMsgID(t *testing.T) {
 	}
 	require.NoError(t, msgs.Error())
 	assert.Equal(t, 1, count, "JetStream should keep only one message for duplicate Nats-Msg-Id")
+}
+
+func TestHMACVerificationEndToEnd(t *testing.T) {
+	// hmacListener and hmacPort are reserved in setup() before the
+	// Zitadel container starts so the port is present in
+	// HostAccessPorts and reachable from inside the Zitadel container.
+	ln := hmacListener
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+	endpoint := fmt.Sprintf("http://host.testcontainers.internal:%d/hmac-test", hmacPort)
+
+	// Create the target; Zitadel returns the signing key on first create.
+	resp, err := zitadelAPI("/zitadel.action.v2beta.ActionService/CreateTarget", map[string]any{
+		"name":        "hmac-" + suffix,
+		"restWebhook": map[string]any{"interruptOnError": false},
+		"endpoint":    endpoint,
+		"timeout":     "10s",
+	})
+	require.NoError(t, err, "create target")
+
+	signingKey, ok := resp["signingKey"].(string)
+	require.True(t, ok, "CreateTarget response missing signingKey field: %v", resp)
+	require.NotEmpty(t, signingKey, "Zitadel-generated signing key must not be empty")
+
+	var targetID string
+	if id, ok := resp["id"].(string); ok && id != "" {
+		targetID = id
+	} else if d, ok := resp["details"].(map[string]any); ok {
+		if id, ok := d["id"].(string); ok && id != "" {
+			targetID = id
+		}
+	}
+	require.NotEmpty(t, targetID, "CreateTarget response missing id")
+
+	// Spin up a minimal Fiber app on the reserved port with HMAC
+	// enabled for the /hmac-test route. The handler records the body
+	// on a channel so the test can observe a verified delivery.
+	app := fiber.New(fiber.Config{ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second})
+	received := make(chan []byte, 1)
+	app.Post("/hmac-test",
+		middleware.HMACVerify(signingKey, 5*time.Minute),
+		func(c fiber.Ctx) error {
+			body := slices.Clone(c.Body())
+			select {
+			case received <- body:
+			default:
+			}
+			return c.SendStatus(fiber.StatusOK)
+		},
+	)
+	go func() { _ = app.Listener(ln) }()
+	defer func() { _ = app.Shutdown() }()
+
+	// Route the user.human.added event to this target.
+	require.NoError(t, setExecution(map[string]any{"event": map[string]any{"event": "user.human.added"}}, targetID), "set execution")
+	time.Sleep(3 * time.Second)
+
+	// Trigger an event. Zitadel will POST a signed webhook to our
+	// reserved port. If HMAC verification succeeds, the handler places
+	// the body on the channel; if it fails, HMACVerify returns 401 and
+	// the channel stays empty.
+	email := fmt.Sprintf("hmac-%s@example.com", suffix)
+	_, err = createUser("HMAC", "Test", email)
+	require.NoError(t, err, "create user")
+
+	select {
+	case body := <-received:
+		require.NotEmpty(t, body)
+		// Sanity-check: body is a valid Zitadel envelope JSON.
+		var env zitadel.Envelope[zitadel.UserHumanAdded]
+		require.NoError(t, json.Unmarshal(body, &env))
+		assert.Equal(t, "user.human.added", env.EventType)
+		assert.Equal(t, "HMAC", env.EventPayload.FirstName)
+	case <-time.After(30 * time.Second):
+		t.Fatal("HMAC-protected endpoint did not receive webhook within 30s — either HMAC verification failed (middleware returned 401) or Zitadel did not deliver")
+	}
 }

@@ -78,5 +78,5 @@ type ZerologConfig struct {
 	Fields map[string]string `yaml:"fields"`
 
 	// Outputs lists the output destinations. If empty, logs are discarded.
-	Outputs []ZerologOutputConfig `yaml:"outputs"`
+	Outputs []ZerologOutputConfig `yaml:"outputs" validate:"dive"`
 }
