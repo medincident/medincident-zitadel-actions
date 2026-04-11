@@ -20,8 +20,8 @@ import (
 // is grep-local; string values carry the mapper name so interceptors can
 // distinguish per-mapper telemetry.
 const (
-	ErrCodeMapperParseRawBodyFailed = "mapper_parse_raw_body_failed"
-	ErrCodeMapperAnyPBNewFailed     = "mapper_anypb_new_failed"
+	ErrCodeMapperParseRawBodyFailed = "parse_raw_body_failed"
+	ErrCodeMapperAnyPBNewFailed     = "anypb_new_failed"
 )
 
 // profileFieldOrder maps Zitadel camelCase JSON keys to proto snake_case field names

@@ -13,8 +13,8 @@ import (
 // each emit site is grep-local; string values carry the handler name
 // so interceptors can distinguish per-event telemetry.
 const (
-	ErrCodeUserHumanEmailVerifiedBindFailed = "user_human_email_verified_bind_failed"
-	ErrCodeUserHumanEmailVerifiedMapFailed  = "user_human_email_verified_map_failed"
+	ErrCodeUserHumanEmailVerifiedBindFailed = "bind_failed"
+	ErrCodeUserHumanEmailVerifiedMapFailed  = "map_failed"
 )
 
 const subjectUserHumanEmailVerified = "zitadel.users.v1.human.email.verified"

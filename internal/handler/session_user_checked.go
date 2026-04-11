@@ -13,8 +13,8 @@ import (
 // each emit site is grep-local; string values carry the handler name
 // so interceptors can distinguish per-event telemetry.
 const (
-	ErrCodeSessionUserCheckedBindFailed = "session_user_checked_bind_failed"
-	ErrCodeSessionUserCheckedMapFailed  = "session_user_checked_map_failed"
+	ErrCodeSessionUserCheckedBindFailed = "bind_failed"
+	ErrCodeSessionUserCheckedMapFailed  = "map_failed"
 )
 
 const subjectSessionUserChecked = "zitadel.sessions.v1.user.checked"

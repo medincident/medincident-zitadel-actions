@@ -21,9 +21,9 @@ import (
 // site is grep-local; string values carry the publisher name so interceptors
 // can distinguish per-publish telemetry.
 const (
-	ErrCodePublishAnyPBNewFailed    = "publish_anypb_new_failed"
-	ErrCodePublishMarshalFailed     = "publish_marshal_failed"
-	ErrCodePublishNATSPublishFailed = "publish_nats_publish_failed"
+	ErrCodePublishAnyPBNewFailed    = "anypb_new_failed"
+	ErrCodePublishMarshalFailed     = "marshal_failed"
+	ErrCodePublishNATSPublishFailed = "nats_publish_failed"
 )
 
 // Publisher publishes Zitadel events to NATS JetStream with retry.

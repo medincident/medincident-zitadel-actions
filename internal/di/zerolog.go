@@ -20,7 +20,7 @@ import (
 // Error codes emitted by this DI init. Declared at file level so each emit site
 // is grep-local; string values carry the component name so interceptors can
 // distinguish per-component telemetry.
-const ErrCodeZerologCleanupFailed = "zerolog_cleanup_failed"
+const ErrCodeZerologCleanupFailed = "cleanup_failed"
 
 // loggerWrapper holds the logger and a cleanup function that closes file handles.
 // It implements do.ShutdownerWithContextAndError so samber/do calls Shutdown
