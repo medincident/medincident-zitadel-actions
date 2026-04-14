@@ -29,7 +29,7 @@ func (w *fiberWrapper) Shutdown(ctx context.Context) error {
 	return w.app.ShutdownWithContext(ctx)
 }
 
-func ProvideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
+func provideFiberWrapper(injector do.Injector) (*fiberWrapper, error) {
 	cfg, err := do.Invoke[*config.Config](injector)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func errorHandler(logger *zerolog.Logger) fiber.ErrorHandler {
 	}
 }
 
-func ProvideFiberApp(injector do.Injector) (*fiber.App, error) {
+func provideFiberApp(injector do.Injector) (*fiber.App, error) {
 	w, err := do.Invoke[*fiberWrapper](injector)
 	if err != nil {
 		return nil, err

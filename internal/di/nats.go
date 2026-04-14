@@ -24,7 +24,7 @@ func (w *natsConnWrapper) Shutdown(_ context.Context) error {
 	return w.conn.Drain()
 }
 
-func ProvideNatsConnWrapper(injector do.Injector) (*natsConnWrapper, error) {
+func provideNatsConnWrapper(injector do.Injector) (*natsConnWrapper, error) {
 	cfg, err := do.Invoke[*config.Config](injector)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func ProvideNatsConnWrapper(injector do.Injector) (*natsConnWrapper, error) {
 	return &natsConnWrapper{conn: nc}, nil
 }
 
-func ProvideNatsConn(injector do.Injector) (*nats.Conn, error) {
+func provideNatsConn(injector do.Injector) (*nats.Conn, error) {
 	w, err := do.Invoke[*natsConnWrapper](injector)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func ProvideNatsConn(injector do.Injector) (*nats.Conn, error) {
 	return w.conn, nil
 }
 
-func ProvideJetStream(injector do.Injector) (jetstream.JetStream, error) {
+func provideJetStream(injector do.Injector) (jetstream.JetStream, error) {
 	nc, err := do.Invoke[*nats.Conn](injector)
 	if err != nil {
 		return nil, err

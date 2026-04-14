@@ -7,7 +7,7 @@ import (
 	"github.com/samber/do/v2"
 )
 
-func ProvideRedsync(injector do.Injector) (*redsync.Redsync, error) {
+func provideRedsync(injector do.Injector) (*redsync.Redsync, error) {
 	client, err := do.Invoke[*goredislib.Client](injector)
 	if err != nil {
 		return nil, err

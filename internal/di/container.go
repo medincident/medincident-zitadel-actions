@@ -1,9 +1,14 @@
 // Package di wires the service's dependency graph via samber/do/v2.
 //
-// The container is built once from a loaded *config.Config. Providers are
-// lifecycle-aware: anything that holds external resources (NATS, Redis, HTTP
-// server, log file handles) implements the do shutdowner protocol so
-// injector.ShutdownWithContext cleans up on exit.
+// The container is built once from a loaded *config.Config. Providers
+// are lifecycle-aware: anything that holds external resources (NATS,
+// Redis, HTTP server, log file handles) is held by a private wrapper
+// that implements the do Shutdowner protocol. Consumers depend on the
+// real type (e.g. *nats.Conn, *fiber.App), not the wrapper.
+//
+// Provider functions are all unexported — NewContainer is the only
+// public entry point. Consumers resolve dependencies via do.Invoke on
+// the returned injector, keyed by the real type.
 package di
 
 import (
@@ -20,18 +25,18 @@ func NewContainer(cfg *config.Config) (do.Injector, error) {
 
 	do.ProvideValue(injector, cfg)
 
-	do.Provide(injector, ProvideLoggerWrapper)
-	do.Provide(injector, ProvideZerolog)
-	do.Provide(injector, ProvideRedisClientWrapper)
-	do.Provide(injector, ProvideRedisClient)
-	do.Provide(injector, ProvideRedsync)
-	do.Provide(injector, ProvideNatsConnWrapper)
-	do.Provide(injector, ProvideNatsConn)
-	do.Provide(injector, ProvideJetStream)
-	do.Provide(injector, ProvidePublisher)
-	do.Provide(injector, ProvideEventHandler)
-	do.Provide(injector, ProvideFiberWrapper)
-	do.Provide(injector, ProvideFiberApp)
+	do.Provide(injector, provideLoggerWrapper)
+	do.Provide(injector, provideZerolog)
+	do.Provide(injector, provideRedisClientWrapper)
+	do.Provide(injector, provideRedisClient)
+	do.Provide(injector, provideRedsync)
+	do.Provide(injector, provideNatsConnWrapper)
+	do.Provide(injector, provideNatsConn)
+	do.Provide(injector, provideJetStream)
+	do.Provide(injector, providePublisher)
+	do.Provide(injector, provideEventHandler)
+	do.Provide(injector, provideFiberWrapper)
+	do.Provide(injector, provideFiberApp)
 
 	return injector, nil
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 )
 
-func ProvidePublisher(injector do.Injector) (*publish.Publisher, error) {
+func providePublisher(injector do.Injector) (*publish.Publisher, error) {
 	logger, err := do.Invoke[*zerolog.Logger](injector)
 	if err != nil {
 		return nil, err
