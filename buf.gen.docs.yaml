@@ -1,0 +1,13 @@
+version: v2
+
+inputs:
+  - directory: api/proto
+
+plugins:
+  - local:
+      - go
+      - tool
+      - protoc-gen-doc
+    out: docs/proto
+    opt:
+      - markdown,package.md

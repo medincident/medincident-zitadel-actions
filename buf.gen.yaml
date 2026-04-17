@@ -1,25 +1,19 @@
 version: v2
 
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/medincident/medincident-zitadel-actions/pkg
+
 inputs:
-  - git_repo: https://github.com/medincident/medincident-proto.git
-    subdir: api/proto
-    paths:
-      - zitadel/events/v1
-      - zitadel/users/v1
-      - zitadel/sessions/v1
+  - directory: api/proto
 
 plugins:
   - local:
       - go
       - tool
       - protoc-gen-go
-    out: gen
+    out: pkg
     opt:
       - paths=source_relative
-      # Go import paths provided via M-mappings so proto files stay
-      # language-agnostic in the medincident-proto monorepo.
-      - Mzitadel/events/v1/envelope.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/events/v1
-      - Mzitadel/users/v1/types.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/users/v1
-      - Mzitadel/users/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/users/v1
-      - Mzitadel/sessions/v1/types.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/sessions/v1
-      - Mzitadel/sessions/v1/events.proto=github.com/medincident/medincident-zitadel-actions/gen/zitadel/sessions/v1

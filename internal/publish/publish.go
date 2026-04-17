@@ -15,9 +15,9 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	eventsv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/events/v1"
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
+	eventsv1 "github.com/medincident/medincident-zitadel-actions/pkg/events/v1"
 )
 
 const (

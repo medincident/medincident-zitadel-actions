@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package users.v1;
+
+import "google/protobuf/field_mask.proto";
+import "users/v1/types.proto";
+
+// UserHumanAdded mirrors zitadel/zitadel
+// internal/repository/user.HumanAddedEvent.
+// Emitted for Zitadel event type "user.human.added".
+message UserHumanAdded {
+  string user_name = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string display_name = 4;
+  string email = 5;
+  string preferred_language = 6;
+  Gender gender = 7;
+  optional string nick_name = 8;
+}
+
+// UserHumanProfileChanged mirrors HumanProfileChangedEvent.
+message UserHumanProfileChanged {
+  string first_name = 1;
+  string last_name = 2;
+  string display_name = 3;
+  string preferred_language = 4;
+  Gender gender = 5;
+  optional string nick_name = 6;
+
+  reserved 7 to 14;
+
+  google.protobuf.FieldMask updated_fields = 15;
+}
+
+// UserHumanEmailChanged mirrors HumanEmailChangedEvent.
+message UserHumanEmailChanged {
+  string email = 1;
+}
+
+// UserHumanEmailVerified mirrors HumanEmailVerifiedEvent. Marker event
+// — Zitadel sends no event_payload on the wire.
+message UserHumanEmailVerified {}

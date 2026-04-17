@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package sessions.v1;
+
+// HeaderValues wraps the repeated-value half of a multi-valued HTTP
+// header. Proto3 maps cannot have a repeated value type directly, so
+// we wrap.
+message HeaderValues {
+  repeated string values = 1;
+}
+
+// UserAgent mirrors zitadel/zitadel internal/domain.UserAgent.
+message UserAgent {
+  string ip = 1;
+  map<string, HeaderValues> headers = 2;
+  optional string fingerprint_id = 3;
+  optional string description = 4;
+}

@@ -9,6 +9,8 @@ on:
       - "go.sum"
       - "**.proto"
       - "buf.gen.yaml"
+      - "buf.gen.docs.yaml"
+      - "api/proto/buf.yaml"
       - "Taskfile.yml"
       - "Makefile"
       - ".github/workflows/ci.yml"
@@ -20,6 +22,8 @@ on:
       - "go.sum"
       - "**.proto"
       - "buf.gen.yaml"
+      - "buf.gen.docs.yaml"
+      - "api/proto/buf.yaml"
       - "Taskfile.yml"
       - "Makefile"
       - ".github/workflows/ci.yml"
@@ -39,6 +43,8 @@ jobs:
       - uses: arduino/setup-task@v2
         with:
           version: 3.x
+      - run: task proto:fmt:check
+      - run: task proto:lint
       - run: task gen:check
       - run: task fmt:check
       - run: task lint

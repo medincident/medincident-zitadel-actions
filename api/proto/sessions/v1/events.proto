@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package sessions.v1;
+
+import "google/protobuf/timestamp.proto";
+import "sessions/v1/types.proto";
+
+// SessionAdded mirrors zitadel/zitadel
+// internal/repository/session.AddedEvent.
+message SessionAdded {
+  optional UserAgent user_agent = 1;
+}
+
+// SessionUserChecked mirrors
+// internal/repository/session.UserCheckedEvent.
+message SessionUserChecked {
+  string user_id = 1;
+  string user_resource_owner = 2;
+  google.protobuf.Timestamp checked_at = 3;
+  optional string preferred_language = 4;
+}

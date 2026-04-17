@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: zitadel/sessions/v1/types.proto
+// source: sessions/v1/types.proto
 
-package v1
+package sessionsv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -33,7 +33,7 @@ type HeaderValues struct {
 
 func (x *HeaderValues) Reset() {
 	*x = HeaderValues{}
-	mi := &file_zitadel_sessions_v1_types_proto_msgTypes[0]
+	mi := &file_sessions_v1_types_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +45,7 @@ func (x *HeaderValues) String() string {
 func (*HeaderValues) ProtoMessage() {}
 
 func (x *HeaderValues) ProtoReflect() protoreflect.Message {
-	mi := &file_zitadel_sessions_v1_types_proto_msgTypes[0]
+	mi := &file_sessions_v1_types_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *HeaderValues) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeaderValues.ProtoReflect.Descriptor instead.
 func (*HeaderValues) Descriptor() ([]byte, []int) {
-	return file_zitadel_sessions_v1_types_proto_rawDescGZIP(), []int{0}
+	return file_sessions_v1_types_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *HeaderValues) GetValues() []string {
@@ -81,7 +81,7 @@ type UserAgent struct {
 
 func (x *UserAgent) Reset() {
 	*x = UserAgent{}
-	mi := &file_zitadel_sessions_v1_types_proto_msgTypes[1]
+	mi := &file_sessions_v1_types_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -93,7 +93,7 @@ func (x *UserAgent) String() string {
 func (*UserAgent) ProtoMessage() {}
 
 func (x *UserAgent) ProtoReflect() protoreflect.Message {
-	mi := &file_zitadel_sessions_v1_types_proto_msgTypes[1]
+	mi := &file_sessions_v1_types_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -106,7 +106,7 @@ func (x *UserAgent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserAgent.ProtoReflect.Descriptor instead.
 func (*UserAgent) Descriptor() ([]byte, []int) {
-	return file_zitadel_sessions_v1_types_proto_rawDescGZIP(), []int{1}
+	return file_sessions_v1_types_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *UserAgent) GetIp() string {
@@ -137,45 +137,47 @@ func (x *UserAgent) GetDescription() string {
 	return ""
 }
 
-var File_zitadel_sessions_v1_types_proto protoreflect.FileDescriptor
+var File_sessions_v1_types_proto protoreflect.FileDescriptor
 
-const file_zitadel_sessions_v1_types_proto_rawDesc = "" +
+const file_sessions_v1_types_proto_rawDesc = "" +
 	"\n" +
-	"\x1fzitadel/sessions/v1/types.proto\x12\x13zitadel.sessions.v1\"&\n" +
+	"\x17sessions/v1/types.proto\x12\vsessions.v1\"&\n" +
 	"\fHeaderValues\x12\x16\n" +
-	"\x06values\x18\x01 \x03(\tR\x06values\"\xb7\x02\n" +
+	"\x06values\x18\x01 \x03(\tR\x06values\"\xa7\x02\n" +
 	"\tUserAgent\x12\x0e\n" +
-	"\x02ip\x18\x01 \x01(\tR\x02ip\x12E\n" +
-	"\aheaders\x18\x02 \x03(\v2+.zitadel.sessions.v1.UserAgent.HeadersEntryR\aheaders\x12*\n" +
+	"\x02ip\x18\x01 \x01(\tR\x02ip\x12=\n" +
+	"\aheaders\x18\x02 \x03(\v2#.sessions.v1.UserAgent.HeadersEntryR\aheaders\x12*\n" +
 	"\x0efingerprint_id\x18\x03 \x01(\tH\x00R\rfingerprintId\x88\x01\x01\x12%\n" +
-	"\vdescription\x18\x04 \x01(\tH\x01R\vdescription\x88\x01\x01\x1a]\n" +
+	"\vdescription\x18\x04 \x01(\tH\x01R\vdescription\x88\x01\x01\x1aU\n" +
 	"\fHeadersEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x127\n" +
-	"\x05value\x18\x02 \x01(\v2!.zitadel.sessions.v1.HeaderValuesR\x05value:\x028\x01B\x11\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.sessions.v1.HeaderValuesR\x05value:\x028\x01B\x11\n" +
 	"\x0f_fingerprint_idB\x0e\n" +
-	"\f_descriptionb\x06proto3"
+	"\f_descriptionB\xb9\x01\n" +
+	"\x0fcom.sessions.v1B\n" +
+	"TypesProtoP\x01ZMgithub.com/medincident/medincident-zitadel-actions/pkg/sessions/v1;sessionsv1\xa2\x02\x03SXX\xaa\x02\vSessions.V1\xca\x02\vSessions\\V1\xe2\x02\x17Sessions\\V1\\GPBMetadata\xea\x02\fSessions::V1b\x06proto3"
 
 var (
-	file_zitadel_sessions_v1_types_proto_rawDescOnce sync.Once
-	file_zitadel_sessions_v1_types_proto_rawDescData []byte
+	file_sessions_v1_types_proto_rawDescOnce sync.Once
+	file_sessions_v1_types_proto_rawDescData []byte
 )
 
-func file_zitadel_sessions_v1_types_proto_rawDescGZIP() []byte {
-	file_zitadel_sessions_v1_types_proto_rawDescOnce.Do(func() {
-		file_zitadel_sessions_v1_types_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_zitadel_sessions_v1_types_proto_rawDesc), len(file_zitadel_sessions_v1_types_proto_rawDesc)))
+func file_sessions_v1_types_proto_rawDescGZIP() []byte {
+	file_sessions_v1_types_proto_rawDescOnce.Do(func() {
+		file_sessions_v1_types_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_sessions_v1_types_proto_rawDesc), len(file_sessions_v1_types_proto_rawDesc)))
 	})
-	return file_zitadel_sessions_v1_types_proto_rawDescData
+	return file_sessions_v1_types_proto_rawDescData
 }
 
-var file_zitadel_sessions_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_zitadel_sessions_v1_types_proto_goTypes = []any{
-	(*HeaderValues)(nil), // 0: zitadel.sessions.v1.HeaderValues
-	(*UserAgent)(nil),    // 1: zitadel.sessions.v1.UserAgent
-	nil,                  // 2: zitadel.sessions.v1.UserAgent.HeadersEntry
+var file_sessions_v1_types_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_sessions_v1_types_proto_goTypes = []any{
+	(*HeaderValues)(nil), // 0: sessions.v1.HeaderValues
+	(*UserAgent)(nil),    // 1: sessions.v1.UserAgent
+	nil,                  // 2: sessions.v1.UserAgent.HeadersEntry
 }
-var file_zitadel_sessions_v1_types_proto_depIdxs = []int32{
-	2, // 0: zitadel.sessions.v1.UserAgent.headers:type_name -> zitadel.sessions.v1.UserAgent.HeadersEntry
-	0, // 1: zitadel.sessions.v1.UserAgent.HeadersEntry.value:type_name -> zitadel.sessions.v1.HeaderValues
+var file_sessions_v1_types_proto_depIdxs = []int32{
+	2, // 0: sessions.v1.UserAgent.headers:type_name -> sessions.v1.UserAgent.HeadersEntry
+	0, // 1: sessions.v1.UserAgent.HeadersEntry.value:type_name -> sessions.v1.HeaderValues
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -183,27 +185,27 @@ var file_zitadel_sessions_v1_types_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_zitadel_sessions_v1_types_proto_init() }
-func file_zitadel_sessions_v1_types_proto_init() {
-	if File_zitadel_sessions_v1_types_proto != nil {
+func init() { file_sessions_v1_types_proto_init() }
+func file_sessions_v1_types_proto_init() {
+	if File_sessions_v1_types_proto != nil {
 		return
 	}
-	file_zitadel_sessions_v1_types_proto_msgTypes[1].OneofWrappers = []any{}
+	file_sessions_v1_types_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zitadel_sessions_v1_types_proto_rawDesc), len(file_zitadel_sessions_v1_types_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sessions_v1_types_proto_rawDesc), len(file_sessions_v1_types_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_zitadel_sessions_v1_types_proto_goTypes,
-		DependencyIndexes: file_zitadel_sessions_v1_types_proto_depIdxs,
-		MessageInfos:      file_zitadel_sessions_v1_types_proto_msgTypes,
+		GoTypes:           file_sessions_v1_types_proto_goTypes,
+		DependencyIndexes: file_sessions_v1_types_proto_depIdxs,
+		MessageInfos:      file_sessions_v1_types_proto_msgTypes,
 	}.Build()
-	File_zitadel_sessions_v1_types_proto = out.File
-	file_zitadel_sessions_v1_types_proto_goTypes = nil
-	file_zitadel_sessions_v1_types_proto_depIdxs = nil
+	File_sessions_v1_types_proto = out.File
+	file_sessions_v1_types_proto_goTypes = nil
+	file_sessions_v1_types_proto_depIdxs = nil
 }

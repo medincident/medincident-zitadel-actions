@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: zitadel/events/v1/envelope.proto
+// source: events/v1/envelope.proto
 
-package v1
+package eventsv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -23,10 +23,11 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Envelope mirrors the Zitadel Actions v2 webhook body 1:1 and wraps
-// the typed event payload. Field names and semantics match Zitadel's
-// internal ContextInfoEvent struct
-// (zitadel/zitadel internal/repository/execution/queue.go).
+// Envelope mirrors the Zitadel Actions v2 event webhook body 1:1 and
+// carries the typed event payload in payload. Field names and
+// semantics match Zitadel's internal ContextInfoEvent struct in
+// zitadel/zitadel internal/repository/execution/queue.go — do not
+// rename or re-type without re-verifying upstream.
 type Envelope struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AggregateId   string                 `protobuf:"bytes,1,opt,name=aggregate_id,json=aggregateId,proto3" json:"aggregate_id,omitempty"`
@@ -45,7 +46,7 @@ type Envelope struct {
 
 func (x *Envelope) Reset() {
 	*x = Envelope{}
-	mi := &file_zitadel_events_v1_envelope_proto_msgTypes[0]
+	mi := &file_events_v1_envelope_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -57,7 +58,7 @@ func (x *Envelope) String() string {
 func (*Envelope) ProtoMessage() {}
 
 func (x *Envelope) ProtoReflect() protoreflect.Message {
-	mi := &file_zitadel_events_v1_envelope_proto_msgTypes[0]
+	mi := &file_events_v1_envelope_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -70,7 +71,7 @@ func (x *Envelope) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Envelope.ProtoReflect.Descriptor instead.
 func (*Envelope) Descriptor() ([]byte, []int) {
-	return file_zitadel_events_v1_envelope_proto_rawDescGZIP(), []int{0}
+	return file_events_v1_envelope_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Envelope) GetAggregateId() string {
@@ -143,11 +144,11 @@ func (x *Envelope) GetPayload() *anypb.Any {
 	return nil
 }
 
-var File_zitadel_events_v1_envelope_proto protoreflect.FileDescriptor
+var File_events_v1_envelope_proto protoreflect.FileDescriptor
 
-const file_zitadel_events_v1_envelope_proto_rawDesc = "" +
+const file_events_v1_envelope_proto_rawDesc = "" +
 	"\n" +
-	" zitadel/events/v1/envelope.proto\x12\x11zitadel.events.v1\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf5\x02\n" +
+	"\x18events/v1/envelope.proto\x12\tevents.v1\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf5\x02\n" +
 	"\bEnvelope\x12!\n" +
 	"\faggregate_id\x18\x01 \x01(\tR\vaggregateId\x12%\n" +
 	"\x0eaggregate_type\x18\x02 \x01(\tR\raggregateType\x12%\n" +
@@ -162,29 +163,31 @@ const file_zitadel_events_v1_envelope_proto_rawDesc = "" +
 	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x17\n" +
 	"\auser_id\x18\t \x01(\tR\x06userId\x12.\n" +
 	"\apayload\x18\n" +
-	" \x01(\v2\x14.google.protobuf.AnyR\apayloadb\x06proto3"
+	" \x01(\v2\x14.google.protobuf.AnyR\apayloadB\xae\x01\n" +
+	"\rcom.events.v1B\rEnvelopeProtoP\x01ZIgithub.com/medincident/medincident-zitadel-actions/pkg/events/v1;eventsv1\xa2\x02\x03EXX\xaa\x02\tEvents.V1\xca\x02\tEvents\\V1\xe2\x02\x15Events\\V1\\GPBMetadata\xea\x02\n" +
+	"Events::V1b\x06proto3"
 
 var (
-	file_zitadel_events_v1_envelope_proto_rawDescOnce sync.Once
-	file_zitadel_events_v1_envelope_proto_rawDescData []byte
+	file_events_v1_envelope_proto_rawDescOnce sync.Once
+	file_events_v1_envelope_proto_rawDescData []byte
 )
 
-func file_zitadel_events_v1_envelope_proto_rawDescGZIP() []byte {
-	file_zitadel_events_v1_envelope_proto_rawDescOnce.Do(func() {
-		file_zitadel_events_v1_envelope_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_zitadel_events_v1_envelope_proto_rawDesc), len(file_zitadel_events_v1_envelope_proto_rawDesc)))
+func file_events_v1_envelope_proto_rawDescGZIP() []byte {
+	file_events_v1_envelope_proto_rawDescOnce.Do(func() {
+		file_events_v1_envelope_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_events_v1_envelope_proto_rawDesc), len(file_events_v1_envelope_proto_rawDesc)))
 	})
-	return file_zitadel_events_v1_envelope_proto_rawDescData
+	return file_events_v1_envelope_proto_rawDescData
 }
 
-var file_zitadel_events_v1_envelope_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_zitadel_events_v1_envelope_proto_goTypes = []any{
-	(*Envelope)(nil),              // 0: zitadel.events.v1.Envelope
+var file_events_v1_envelope_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_events_v1_envelope_proto_goTypes = []any{
+	(*Envelope)(nil),              // 0: events.v1.Envelope
 	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
 	(*anypb.Any)(nil),             // 2: google.protobuf.Any
 }
-var file_zitadel_events_v1_envelope_proto_depIdxs = []int32{
-	1, // 0: zitadel.events.v1.Envelope.created_at:type_name -> google.protobuf.Timestamp
-	2, // 1: zitadel.events.v1.Envelope.payload:type_name -> google.protobuf.Any
+var file_events_v1_envelope_proto_depIdxs = []int32{
+	1, // 0: events.v1.Envelope.created_at:type_name -> google.protobuf.Timestamp
+	2, // 1: events.v1.Envelope.payload:type_name -> google.protobuf.Any
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -192,26 +195,26 @@ var file_zitadel_events_v1_envelope_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_zitadel_events_v1_envelope_proto_init() }
-func file_zitadel_events_v1_envelope_proto_init() {
-	if File_zitadel_events_v1_envelope_proto != nil {
+func init() { file_events_v1_envelope_proto_init() }
+func file_events_v1_envelope_proto_init() {
+	if File_events_v1_envelope_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zitadel_events_v1_envelope_proto_rawDesc), len(file_zitadel_events_v1_envelope_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_events_v1_envelope_proto_rawDesc), len(file_events_v1_envelope_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_zitadel_events_v1_envelope_proto_goTypes,
-		DependencyIndexes: file_zitadel_events_v1_envelope_proto_depIdxs,
-		MessageInfos:      file_zitadel_events_v1_envelope_proto_msgTypes,
+		GoTypes:           file_events_v1_envelope_proto_goTypes,
+		DependencyIndexes: file_events_v1_envelope_proto_depIdxs,
+		MessageInfos:      file_events_v1_envelope_proto_msgTypes,
 	}.Build()
-	File_zitadel_events_v1_envelope_proto = out.File
-	file_zitadel_events_v1_envelope_proto_goTypes = nil
-	file_zitadel_events_v1_envelope_proto_depIdxs = nil
+	File_events_v1_envelope_proto = out.File
+	file_events_v1_envelope_proto_goTypes = nil
+	file_events_v1_envelope_proto_depIdxs = nil
 }

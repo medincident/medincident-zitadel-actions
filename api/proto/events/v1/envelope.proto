@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package events.v1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+// Envelope mirrors the Zitadel Actions v2 event webhook body 1:1 and
+// carries the typed event payload in payload. Field names and
+// semantics match Zitadel's internal ContextInfoEvent struct in
+// zitadel/zitadel internal/repository/execution/queue.go — do not
+// rename or re-type without re-verifying upstream.
+message Envelope {
+  string aggregate_id = 1;
+  string aggregate_type = 2;
+  string resource_owner = 3;
+  string instance_id = 4;
+  string version = 5;
+  uint64 sequence = 6;
+  string event_type = 7;
+  google.protobuf.Timestamp created_at = 8;
+  string user_id = 9;
+  google.protobuf.Any payload = 10;
+}

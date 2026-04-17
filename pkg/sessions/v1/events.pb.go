@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: zitadel/sessions/v1/events.proto
+// source: sessions/v1/events.proto
 
-package v1
+package sessionsv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -33,7 +33,7 @@ type SessionAdded struct {
 
 func (x *SessionAdded) Reset() {
 	*x = SessionAdded{}
-	mi := &file_zitadel_sessions_v1_events_proto_msgTypes[0]
+	mi := &file_sessions_v1_events_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +45,7 @@ func (x *SessionAdded) String() string {
 func (*SessionAdded) ProtoMessage() {}
 
 func (x *SessionAdded) ProtoReflect() protoreflect.Message {
-	mi := &file_zitadel_sessions_v1_events_proto_msgTypes[0]
+	mi := &file_sessions_v1_events_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *SessionAdded) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionAdded.ProtoReflect.Descriptor instead.
 func (*SessionAdded) Descriptor() ([]byte, []int) {
-	return file_zitadel_sessions_v1_events_proto_rawDescGZIP(), []int{0}
+	return file_sessions_v1_events_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SessionAdded) GetUserAgent() *UserAgent {
@@ -82,7 +82,7 @@ type SessionUserChecked struct {
 
 func (x *SessionUserChecked) Reset() {
 	*x = SessionUserChecked{}
-	mi := &file_zitadel_sessions_v1_events_proto_msgTypes[1]
+	mi := &file_sessions_v1_events_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -94,7 +94,7 @@ func (x *SessionUserChecked) String() string {
 func (*SessionUserChecked) ProtoMessage() {}
 
 func (x *SessionUserChecked) ProtoReflect() protoreflect.Message {
-	mi := &file_zitadel_sessions_v1_events_proto_msgTypes[1]
+	mi := &file_sessions_v1_events_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -107,7 +107,7 @@ func (x *SessionUserChecked) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionUserChecked.ProtoReflect.Descriptor instead.
 func (*SessionUserChecked) Descriptor() ([]byte, []int) {
-	return file_zitadel_sessions_v1_events_proto_rawDescGZIP(), []int{1}
+	return file_sessions_v1_events_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SessionUserChecked) GetUserId() string {
@@ -138,14 +138,14 @@ func (x *SessionUserChecked) GetPreferredLanguage() string {
 	return ""
 }
 
-var File_zitadel_sessions_v1_events_proto protoreflect.FileDescriptor
+var File_sessions_v1_events_proto protoreflect.FileDescriptor
 
-const file_zitadel_sessions_v1_events_proto_rawDesc = "" +
+const file_sessions_v1_events_proto_rawDesc = "" +
 	"\n" +
-	" zitadel/sessions/v1/events.proto\x12\x13zitadel.sessions.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1fzitadel/sessions/v1/types.proto\"a\n" +
-	"\fSessionAdded\x12B\n" +
+	"\x18sessions/v1/events.proto\x12\vsessions.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17sessions/v1/types.proto\"Y\n" +
+	"\fSessionAdded\x12:\n" +
 	"\n" +
-	"user_agent\x18\x01 \x01(\v2\x1e.zitadel.sessions.v1.UserAgentH\x00R\tuserAgent\x88\x01\x01B\r\n" +
+	"user_agent\x18\x01 \x01(\v2\x16.sessions.v1.UserAgentH\x00R\tuserAgent\x88\x01\x01B\r\n" +
 	"\v_user_agent\"\xe3\x01\n" +
 	"\x12SessionUserChecked\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12.\n" +
@@ -153,30 +153,31 @@ const file_zitadel_sessions_v1_events_proto_rawDesc = "" +
 	"\n" +
 	"checked_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcheckedAt\x122\n" +
 	"\x12preferred_language\x18\x04 \x01(\tH\x00R\x11preferredLanguage\x88\x01\x01B\x15\n" +
-	"\x13_preferred_languageb\x06proto3"
+	"\x13_preferred_languageB\xba\x01\n" +
+	"\x0fcom.sessions.v1B\vEventsProtoP\x01ZMgithub.com/medincident/medincident-zitadel-actions/pkg/sessions/v1;sessionsv1\xa2\x02\x03SXX\xaa\x02\vSessions.V1\xca\x02\vSessions\\V1\xe2\x02\x17Sessions\\V1\\GPBMetadata\xea\x02\fSessions::V1b\x06proto3"
 
 var (
-	file_zitadel_sessions_v1_events_proto_rawDescOnce sync.Once
-	file_zitadel_sessions_v1_events_proto_rawDescData []byte
+	file_sessions_v1_events_proto_rawDescOnce sync.Once
+	file_sessions_v1_events_proto_rawDescData []byte
 )
 
-func file_zitadel_sessions_v1_events_proto_rawDescGZIP() []byte {
-	file_zitadel_sessions_v1_events_proto_rawDescOnce.Do(func() {
-		file_zitadel_sessions_v1_events_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_zitadel_sessions_v1_events_proto_rawDesc), len(file_zitadel_sessions_v1_events_proto_rawDesc)))
+func file_sessions_v1_events_proto_rawDescGZIP() []byte {
+	file_sessions_v1_events_proto_rawDescOnce.Do(func() {
+		file_sessions_v1_events_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_sessions_v1_events_proto_rawDesc), len(file_sessions_v1_events_proto_rawDesc)))
 	})
-	return file_zitadel_sessions_v1_events_proto_rawDescData
+	return file_sessions_v1_events_proto_rawDescData
 }
 
-var file_zitadel_sessions_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_zitadel_sessions_v1_events_proto_goTypes = []any{
-	(*SessionAdded)(nil),          // 0: zitadel.sessions.v1.SessionAdded
-	(*SessionUserChecked)(nil),    // 1: zitadel.sessions.v1.SessionUserChecked
-	(*UserAgent)(nil),             // 2: zitadel.sessions.v1.UserAgent
+var file_sessions_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_sessions_v1_events_proto_goTypes = []any{
+	(*SessionAdded)(nil),          // 0: sessions.v1.SessionAdded
+	(*SessionUserChecked)(nil),    // 1: sessions.v1.SessionUserChecked
+	(*UserAgent)(nil),             // 2: sessions.v1.UserAgent
 	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
-var file_zitadel_sessions_v1_events_proto_depIdxs = []int32{
-	2, // 0: zitadel.sessions.v1.SessionAdded.user_agent:type_name -> zitadel.sessions.v1.UserAgent
-	3, // 1: zitadel.sessions.v1.SessionUserChecked.checked_at:type_name -> google.protobuf.Timestamp
+var file_sessions_v1_events_proto_depIdxs = []int32{
+	2, // 0: sessions.v1.SessionAdded.user_agent:type_name -> sessions.v1.UserAgent
+	3, // 1: sessions.v1.SessionUserChecked.checked_at:type_name -> google.protobuf.Timestamp
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -184,29 +185,29 @@ var file_zitadel_sessions_v1_events_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_zitadel_sessions_v1_events_proto_init() }
-func file_zitadel_sessions_v1_events_proto_init() {
-	if File_zitadel_sessions_v1_events_proto != nil {
+func init() { file_sessions_v1_events_proto_init() }
+func file_sessions_v1_events_proto_init() {
+	if File_sessions_v1_events_proto != nil {
 		return
 	}
-	file_zitadel_sessions_v1_types_proto_init()
-	file_zitadel_sessions_v1_events_proto_msgTypes[0].OneofWrappers = []any{}
-	file_zitadel_sessions_v1_events_proto_msgTypes[1].OneofWrappers = []any{}
+	file_sessions_v1_types_proto_init()
+	file_sessions_v1_events_proto_msgTypes[0].OneofWrappers = []any{}
+	file_sessions_v1_events_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zitadel_sessions_v1_events_proto_rawDesc), len(file_zitadel_sessions_v1_events_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sessions_v1_events_proto_rawDesc), len(file_sessions_v1_events_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_zitadel_sessions_v1_events_proto_goTypes,
-		DependencyIndexes: file_zitadel_sessions_v1_events_proto_depIdxs,
-		MessageInfos:      file_zitadel_sessions_v1_events_proto_msgTypes,
+		GoTypes:           file_sessions_v1_events_proto_goTypes,
+		DependencyIndexes: file_sessions_v1_events_proto_depIdxs,
+		MessageInfos:      file_sessions_v1_events_proto_msgTypes,
 	}.Build()
-	File_zitadel_sessions_v1_events_proto = out.File
-	file_zitadel_sessions_v1_events_proto_goTypes = nil
-	file_zitadel_sessions_v1_events_proto_depIdxs = nil
+	File_sessions_v1_events_proto = out.File
+	file_sessions_v1_events_proto_goTypes = nil
+	file_sessions_v1_events_proto_depIdxs = nil
 }

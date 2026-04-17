@@ -12,9 +12,9 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	eventsv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/events/v1"
-	sessionsv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/sessions/v1"
-	usersv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/users/v1"
+	eventsv1 "github.com/medincident/medincident-zitadel-actions/pkg/events/v1"
+	sessionsv1 "github.com/medincident/medincident-zitadel-actions/pkg/sessions/v1"
+	usersv1 "github.com/medincident/medincident-zitadel-actions/pkg/users/v1"
 
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
 )
