@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: zitadel/users/v1/types.proto
+// source: users/v1/types.proto
 
-package v1
+package usersv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -58,11 +58,11 @@ func (x Gender) String() string {
 }
 
 func (Gender) Descriptor() protoreflect.EnumDescriptor {
-	return file_zitadel_users_v1_types_proto_enumTypes[0].Descriptor()
+	return file_users_v1_types_proto_enumTypes[0].Descriptor()
 }
 
 func (Gender) Type() protoreflect.EnumType {
-	return &file_zitadel_users_v1_types_proto_enumTypes[0]
+	return &file_users_v1_types_proto_enumTypes[0]
 }
 
 func (x Gender) Number() protoreflect.EnumNumber {
@@ -71,37 +71,39 @@ func (x Gender) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Gender.Descriptor instead.
 func (Gender) EnumDescriptor() ([]byte, []int) {
-	return file_zitadel_users_v1_types_proto_rawDescGZIP(), []int{0}
+	return file_users_v1_types_proto_rawDescGZIP(), []int{0}
 }
 
-var File_zitadel_users_v1_types_proto protoreflect.FileDescriptor
+var File_users_v1_types_proto protoreflect.FileDescriptor
 
-const file_zitadel_users_v1_types_proto_rawDesc = "" +
+const file_users_v1_types_proto_rawDesc = "" +
 	"\n" +
-	"\x1czitadel/users/v1/types.proto\x12\x10zitadel.users.v1*X\n" +
+	"\x14users/v1/types.proto\x12\busers.v1*X\n" +
 	"\x06Gender\x12\x16\n" +
 	"\x12GENDER_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rGENDER_FEMALE\x10\x01\x12\x0f\n" +
 	"\vGENDER_MALE\x10\x02\x12\x12\n" +
-	"\x0eGENDER_DIVERSE\x10\x03b\x06proto3"
+	"\x0eGENDER_DIVERSE\x10\x03B\xa4\x01\n" +
+	"\fcom.users.v1B\n" +
+	"TypesProtoP\x01ZGgithub.com/medincident/medincident-zitadel-actions/pkg/users/v1;usersv1\xa2\x02\x03UXX\xaa\x02\bUsers.V1\xca\x02\bUsers\\V1\xe2\x02\x14Users\\V1\\GPBMetadata\xea\x02\tUsers::V1b\x06proto3"
 
 var (
-	file_zitadel_users_v1_types_proto_rawDescOnce sync.Once
-	file_zitadel_users_v1_types_proto_rawDescData []byte
+	file_users_v1_types_proto_rawDescOnce sync.Once
+	file_users_v1_types_proto_rawDescData []byte
 )
 
-func file_zitadel_users_v1_types_proto_rawDescGZIP() []byte {
-	file_zitadel_users_v1_types_proto_rawDescOnce.Do(func() {
-		file_zitadel_users_v1_types_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_zitadel_users_v1_types_proto_rawDesc), len(file_zitadel_users_v1_types_proto_rawDesc)))
+func file_users_v1_types_proto_rawDescGZIP() []byte {
+	file_users_v1_types_proto_rawDescOnce.Do(func() {
+		file_users_v1_types_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_users_v1_types_proto_rawDesc), len(file_users_v1_types_proto_rawDesc)))
 	})
-	return file_zitadel_users_v1_types_proto_rawDescData
+	return file_users_v1_types_proto_rawDescData
 }
 
-var file_zitadel_users_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_zitadel_users_v1_types_proto_goTypes = []any{
-	(Gender)(0), // 0: zitadel.users.v1.Gender
+var file_users_v1_types_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_users_v1_types_proto_goTypes = []any{
+	(Gender)(0), // 0: users.v1.Gender
 }
-var file_zitadel_users_v1_types_proto_depIdxs = []int32{
+var file_users_v1_types_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -109,26 +111,26 @@ var file_zitadel_users_v1_types_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_zitadel_users_v1_types_proto_init() }
-func file_zitadel_users_v1_types_proto_init() {
-	if File_zitadel_users_v1_types_proto != nil {
+func init() { file_users_v1_types_proto_init() }
+func file_users_v1_types_proto_init() {
+	if File_users_v1_types_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zitadel_users_v1_types_proto_rawDesc), len(file_zitadel_users_v1_types_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_users_v1_types_proto_rawDesc), len(file_users_v1_types_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   0,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_zitadel_users_v1_types_proto_goTypes,
-		DependencyIndexes: file_zitadel_users_v1_types_proto_depIdxs,
-		EnumInfos:         file_zitadel_users_v1_types_proto_enumTypes,
+		GoTypes:           file_users_v1_types_proto_goTypes,
+		DependencyIndexes: file_users_v1_types_proto_depIdxs,
+		EnumInfos:         file_users_v1_types_proto_enumTypes,
 	}.Build()
-	File_zitadel_users_v1_types_proto = out.File
-	file_zitadel_users_v1_types_proto_goTypes = nil
-	file_zitadel_users_v1_types_proto_depIdxs = nil
+	File_users_v1_types_proto = out.File
+	file_users_v1_types_proto_goTypes = nil
+	file_users_v1_types_proto_depIdxs = nil
 }

@@ -14,9 +14,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	eventsv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/events/v1"
-	usersv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/users/v1"
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
+	eventsv1 "github.com/medincident/medincident-zitadel-actions/pkg/events/v1"
+	usersv1 "github.com/medincident/medincident-zitadel-actions/pkg/users/v1"
 )
 
 func TestDedupMsgID(t *testing.T) {

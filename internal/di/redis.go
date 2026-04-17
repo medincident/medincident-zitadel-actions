@@ -20,7 +20,7 @@ func (w *redisClientWrapper) Shutdown(_ context.Context) error {
 	return w.client.Close()
 }
 
-func ProvideRedisClientWrapper(injector do.Injector) (*redisClientWrapper, error) {
+func provideRedisClientWrapper(injector do.Injector) (*redisClientWrapper, error) {
 	cfg, err := do.Invoke[*config.Config](injector)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func ProvideRedisClientWrapper(injector do.Injector) (*redisClientWrapper, error
 	return &redisClientWrapper{client: client}, nil
 }
 
-func ProvideRedisClient(injector do.Injector) (*redis.Client, error) {
+func provideRedisClient(injector do.Injector) (*redis.Client, error) {
 	w, err := do.Invoke[*redisClientWrapper](injector)
 	if err != nil {
 		return nil, err

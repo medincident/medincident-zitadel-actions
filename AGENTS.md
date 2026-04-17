@@ -1,6 +1,6 @@
 # Agent Instructions — medincident-zitadel-actions
 
-HTTP gateway: **Zitadel Actions v2 → NATS JetStream**, written in Go 1.26.1.
+HTTP gateway: **Zitadel Actions v2 → NATS JetStream**, written in Go 1.26.2.
 
 ---
 
@@ -8,6 +8,17 @@ HTTP gateway: **Zitadel Actions v2 → NATS JetStream**, written in Go 1.26.1.
 
 ```
 cmd/server/main.go                          — entry point, graceful shutdown
+api/proto/                                  — protobuf source files (buf v2 module)
+  buf.yaml                                  — buf module config (lint, breaking)
+  events/v1/                                — event envelope proto
+  sessions/v1/                              — session event protos
+  users/v1/                                 — user event + type protos
+pkg/                                        — buf-generated Go code (import from here)
+  events/v1/                                — event envelope pb.go
+  sessions/v1/                              — session event pb.go
+  users/v1/                                 — user event + type pb.go
+buf.gen.yaml                                — buf codegen config (local input, managed mode)
+buf.gen.docs.yaml                           — buf doc generation config
 internal/
   config/                                   — YAML config types + reader
   di/                                       — samber/do providers (container, zerolog, fiber, nats, redis)
@@ -16,11 +27,6 @@ internal/
   middleware/                               — Fiber middleware (ContentType, HMAC)
   publish/                                  — NATS JetStream publishing helper
   zitadel/                                  — Envelope[T], event payload structs
-buf.gen.yaml                                — buf codegen config (remote git_repo input)
-gen/                                        — buf-generated Go code (import from here)
-  medincident/events/v1/                     — event envelope proto
-  medincident/sessions/v1/                   — session event protos
-  medincident/users/v1/                      — user event + type protos
 configs/config.example.yaml                — annotated config reference
 test/integration/zitadel/                   — integration tests (testcontainers-go)
   data/                                     — Zitadel config & steps YAML for tests
@@ -41,6 +47,7 @@ test/integration/zitadel/                   — integration tests (testcontainer
 | `gopkg.in/yaml.v3` | YAML config parsing |
 | `github.com/bufbuild/buf` (go tool) | Protobuf tooling |
 | `google.golang.org/protobuf/cmd/protoc-gen-go` (go tool) | Proto → Go codegen |
+| `github.com/pseudomuto/protoc-gen-doc` (go tool) | Proto → Markdown doc generation |
 | `github.com/abice/go-enum` (go tool) | Go enum codegen |
 | `github.com/testcontainers/testcontainers-go` | Integration test containers |
 | `github.com/cenkalti/backoff/v4` | Exponential backoff retry |
@@ -53,15 +60,17 @@ test/integration/zitadel/                   — integration tests (testcontainer
 ## Tooling
 
 ```bash
-task gen               # buf generate from remote proto repo + go generate
-task gen:check         # regenerate and fail if gen/ drifts from committed code (CI gate)
+task gen               # buf generate Go code + docs from local api/proto/
+task gen:check         # regenerate and fail if pkg/ or docs/proto/ drift from committed code (CI gate)
+task proto:fmt         # format proto files (buf format)
+task proto:fmt:check   # verify proto files are formatted (CI gate)
+task proto:lint        # lint proto files (buf lint)
+task proto:breaking    # breaking change detection vs main
 task fmt               # format Go code (gofmt + goimports via golangci-lint)
 task fmt:check         # verify Go code is formatted (CI gate, dry-run)
 task lint              # golangci-lint
 task test:integration  # integration tests via testcontainers (requires Docker)
 ```
-
-No Makefile exists yet. Do not add `generate`, `fmt`, or `lint` targets to a Makefile — those belong in Taskfile.yml only.
 
 ---
 
@@ -148,11 +157,12 @@ envelope.EventPayload.FirstName
 
 ## Protobuf
 
-Proto source lives in `github.com/medincident/medincident-proto` (remote repo).
-`buf.gen.yaml` in project root fetches protos via `git_repo` input and generates Go code into `gen/`.
-Generated packages: `gen/zitadel/events/v1/`, `gen/zitadel/users/v1/`, and `gen/zitadel/sessions/v1/`.
-The `buf.gen.yaml` input filter lists exactly these three packages under `paths:` so only the Zitadel passthrough tree is generated — no `rm -rf` hacks in the Taskfile.
-Run `task gen` to regenerate.
+Proto source lives in `api/proto/` with a buf v2 module (`api/proto/buf.yaml`).
+`buf.gen.yaml` in the project root uses managed mode to inject `go_package` and generates Go code into `pkg/`.
+Generated packages: `pkg/events/v1/`, `pkg/users/v1/`, and `pkg/sessions/v1/`.
+Proto packages: `events.v1`, `users.v1`, `sessions.v1` (no prefix).
+Proto files contain no `option go_package` — buf managed mode injects it via `go_package_prefix`.
+Run `task gen` to regenerate. Run `task proto:lint` to lint.
 
 ---
 

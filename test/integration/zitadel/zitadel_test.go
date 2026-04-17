@@ -30,15 +30,15 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/protobuf/proto"
 
-	eventsv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/events/v1"
-	sessionsv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/sessions/v1"
-	usersv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/users/v1"
 	"github.com/medincident/medincident-zitadel-actions/internal/config"
 	"github.com/medincident/medincident-zitadel-actions/internal/handler"
 	"github.com/medincident/medincident-zitadel-actions/internal/mapper"
 	"github.com/medincident/medincident-zitadel-actions/internal/middleware"
 	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
+	eventsv1 "github.com/medincident/medincident-zitadel-actions/pkg/events/v1"
+	sessionsv1 "github.com/medincident/medincident-zitadel-actions/pkg/sessions/v1"
+	usersv1 "github.com/medincident/medincident-zitadel-actions/pkg/users/v1"
 )
 
 // Package-level state shared across all tests.

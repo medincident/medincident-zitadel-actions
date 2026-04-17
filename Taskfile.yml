@@ -2,16 +2,67 @@ version: "3"
 
 tasks:
   gen:
-    desc: Generate Go code from remote protobuf definitions
+    desc: Generate Go code and docs from protobuf definitions
     cmds:
       - go tool buf generate
+      - task: gen:docs
       - go generate {{.ROOT_DIR}}/...
+
+  gen:docs:
+    desc: Generate Markdown documentation per proto package into docs/proto/
+    cmds:
+      - rm -rf docs/proto
+      - |
+        set -e
+        for dir in $(find api/proto -type f -name '*.proto' -exec dirname {} \; | sort -u); do
+          rel="${dir#api/proto/}"
+          mkdir -p "docs/proto/$rel"
+          go tool buf generate --template buf.gen.docs.yaml --path "$dir"
+          mv docs/proto/package.md "docs/proto/$rel/README.md"
+        done
+      - |
+        set -e
+        find docs/proto -name '*.md' | while read -r f; do
+          awk '
+            { sub(/[ \t\r]+$/, "") }
+            /^$/ { blank++; next }
+            { for (i = 0; i < blank; i++) print ""; blank = 0; print }
+          ' "$f" > "$f.tmp"
+          mv "$f.tmp" "$f"
+        done
 
   gen:check:
     desc: Verify generated code is up to date (fails if `task gen` would produce changes)
     cmds:
       - task: gen
-      - git diff --exit-code -- gen/
+      - git diff --exit-code -- pkg/ docs/proto/
+
+  proto:fmt:
+    desc: Format proto files
+    cmds:
+      - go tool buf format -w api/proto
+
+  proto:fmt:check:
+    desc: Verify proto files are formatted (fails if `task proto:fmt` would produce changes)
+    cmds:
+      - go tool buf format -d --exit-code api/proto
+
+  proto:lint:
+    desc: Lint proto files
+    cmds:
+      - go tool buf lint api/proto
+
+  proto:breaking:
+    desc: Check for breaking proto changes vs main (skips gracefully if main has no protos)
+    cmds:
+      - |
+        if git show origin/main:api/proto/buf.yaml >/dev/null 2>&1; then
+          go tool buf breaking api/proto --against '.git#branch=origin/main,subdir=api/proto'
+        elif git show main:api/proto/buf.yaml >/dev/null 2>&1; then
+          go tool buf breaking api/proto --against '.git#branch=main,subdir=api/proto'
+        else
+          echo "Skipping breaking check: main branch has no api/proto/"
+        fi
 
   fmt:
     desc: Format Go code (gofmt + goimports via golangci-lint)

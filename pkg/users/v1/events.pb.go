@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: zitadel/users/v1/events.proto
+// source: users/v1/events.proto
 
-package v1
+package usersv1
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -25,12 +25,6 @@ const (
 // UserHumanAdded mirrors zitadel/zitadel
 // internal/repository/user.HumanAddedEvent.
 // Emitted for Zitadel event type "user.human.added".
-//
-// Zitadel's upstream Go struct carries legacy address/phone/password
-// fields (country, locality, postalCode, region, streetAddress, phone,
-// encodedHash, changeRequired). They are deliberately omitted here —
-// the v4+ AddHumanUser API no longer exposes them, they are always
-// empty on the wire, and this platform has no use for them.
 type UserHumanAdded struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	UserName          string                 `protobuf:"bytes,1,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty"`
@@ -39,7 +33,7 @@ type UserHumanAdded struct {
 	DisplayName       string                 `protobuf:"bytes,4,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	Email             string                 `protobuf:"bytes,5,opt,name=email,proto3" json:"email,omitempty"`
 	PreferredLanguage string                 `protobuf:"bytes,6,opt,name=preferred_language,json=preferredLanguage,proto3" json:"preferred_language,omitempty"`
-	Gender            Gender                 `protobuf:"varint,7,opt,name=gender,proto3,enum=zitadel.users.v1.Gender" json:"gender,omitempty"`
+	Gender            Gender                 `protobuf:"varint,7,opt,name=gender,proto3,enum=users.v1.Gender" json:"gender,omitempty"`
 	NickName          *string                `protobuf:"bytes,8,opt,name=nick_name,json=nickName,proto3,oneof" json:"nick_name,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -47,7 +41,7 @@ type UserHumanAdded struct {
 
 func (x *UserHumanAdded) Reset() {
 	*x = UserHumanAdded{}
-	mi := &file_zitadel_users_v1_events_proto_msgTypes[0]
+	mi := &file_users_v1_events_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -59,7 +53,7 @@ func (x *UserHumanAdded) String() string {
 func (*UserHumanAdded) ProtoMessage() {}
 
 func (x *UserHumanAdded) ProtoReflect() protoreflect.Message {
-	mi := &file_zitadel_users_v1_events_proto_msgTypes[0]
+	mi := &file_users_v1_events_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -72,7 +66,7 @@ func (x *UserHumanAdded) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserHumanAdded.ProtoReflect.Descriptor instead.
 func (*UserHumanAdded) Descriptor() ([]byte, []int) {
-	return file_zitadel_users_v1_events_proto_rawDescGZIP(), []int{0}
+	return file_users_v1_events_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *UserHumanAdded) GetUserName() string {
@@ -131,20 +125,14 @@ func (x *UserHumanAdded) GetNickName() string {
 	return ""
 }
 
-// UserHumanProfileChanged mirrors HumanProfileChangedEvent. Field
-// optionality matches UserHumanAdded exactly. Change tracking is
-// carried by updated_fields (FieldMask):
-//   - field not in mask                      -> not changed, consumer ignores
-//   - field in mask + optional + null/unset  -> cleared
-//   - field in mask + optional + set         -> new value
-//   - field in mask + required               -> new (non-null) value
+// UserHumanProfileChanged mirrors HumanProfileChangedEvent.
 type UserHumanProfileChanged struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	FirstName         string                 `protobuf:"bytes,1,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
 	LastName          string                 `protobuf:"bytes,2,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
 	DisplayName       string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	PreferredLanguage string                 `protobuf:"bytes,4,opt,name=preferred_language,json=preferredLanguage,proto3" json:"preferred_language,omitempty"`
-	Gender            Gender                 `protobuf:"varint,5,opt,name=gender,proto3,enum=zitadel.users.v1.Gender" json:"gender,omitempty"`
+	Gender            Gender                 `protobuf:"varint,5,opt,name=gender,proto3,enum=users.v1.Gender" json:"gender,omitempty"`
 	NickName          *string                `protobuf:"bytes,6,opt,name=nick_name,json=nickName,proto3,oneof" json:"nick_name,omitempty"`
 	UpdatedFields     *fieldmaskpb.FieldMask `protobuf:"bytes,15,opt,name=updated_fields,json=updatedFields,proto3" json:"updated_fields,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -153,7 +141,7 @@ type UserHumanProfileChanged struct {
 
 func (x *UserHumanProfileChanged) Reset() {
 	*x = UserHumanProfileChanged{}
-	mi := &file_zitadel_users_v1_events_proto_msgTypes[1]
+	mi := &file_users_v1_events_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -165,7 +153,7 @@ func (x *UserHumanProfileChanged) String() string {
 func (*UserHumanProfileChanged) ProtoMessage() {}
 
 func (x *UserHumanProfileChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_zitadel_users_v1_events_proto_msgTypes[1]
+	mi := &file_users_v1_events_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -178,7 +166,7 @@ func (x *UserHumanProfileChanged) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserHumanProfileChanged.ProtoReflect.Descriptor instead.
 func (*UserHumanProfileChanged) Descriptor() ([]byte, []int) {
-	return file_zitadel_users_v1_events_proto_rawDescGZIP(), []int{1}
+	return file_users_v1_events_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *UserHumanProfileChanged) GetFirstName() string {
@@ -240,7 +228,7 @@ type UserHumanEmailChanged struct {
 
 func (x *UserHumanEmailChanged) Reset() {
 	*x = UserHumanEmailChanged{}
-	mi := &file_zitadel_users_v1_events_proto_msgTypes[2]
+	mi := &file_users_v1_events_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -252,7 +240,7 @@ func (x *UserHumanEmailChanged) String() string {
 func (*UserHumanEmailChanged) ProtoMessage() {}
 
 func (x *UserHumanEmailChanged) ProtoReflect() protoreflect.Message {
-	mi := &file_zitadel_users_v1_events_proto_msgTypes[2]
+	mi := &file_users_v1_events_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -265,7 +253,7 @@ func (x *UserHumanEmailChanged) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserHumanEmailChanged.ProtoReflect.Descriptor instead.
 func (*UserHumanEmailChanged) Descriptor() ([]byte, []int) {
-	return file_zitadel_users_v1_events_proto_rawDescGZIP(), []int{2}
+	return file_users_v1_events_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *UserHumanEmailChanged) GetEmail() string {
@@ -285,7 +273,7 @@ type UserHumanEmailVerified struct {
 
 func (x *UserHumanEmailVerified) Reset() {
 	*x = UserHumanEmailVerified{}
-	mi := &file_zitadel_users_v1_events_proto_msgTypes[3]
+	mi := &file_users_v1_events_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -297,7 +285,7 @@ func (x *UserHumanEmailVerified) String() string {
 func (*UserHumanEmailVerified) ProtoMessage() {}
 
 func (x *UserHumanEmailVerified) ProtoReflect() protoreflect.Message {
-	mi := &file_zitadel_users_v1_events_proto_msgTypes[3]
+	mi := &file_users_v1_events_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -310,14 +298,14 @@ func (x *UserHumanEmailVerified) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserHumanEmailVerified.ProtoReflect.Descriptor instead.
 func (*UserHumanEmailVerified) Descriptor() ([]byte, []int) {
-	return file_zitadel_users_v1_events_proto_rawDescGZIP(), []int{3}
+	return file_users_v1_events_proto_rawDescGZIP(), []int{3}
 }
 
-var File_zitadel_users_v1_events_proto protoreflect.FileDescriptor
+var File_users_v1_events_proto protoreflect.FileDescriptor
 
-const file_zitadel_users_v1_events_proto_rawDesc = "" +
+const file_users_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"\x1dzitadel/users/v1/events.proto\x12\x10zitadel.users.v1\x1a google/protobuf/field_mask.proto\x1a\x1czitadel/users/v1/types.proto\"\xb3\x02\n" +
+	"\x15users/v1/events.proto\x12\busers.v1\x1a google/protobuf/field_mask.proto\x1a\x14users/v1/types.proto\"\xab\x02\n" +
 	"\x0eUserHumanAdded\x12\x1b\n" +
 	"\tuser_name\x18\x01 \x01(\tR\buserName\x12\x1d\n" +
 	"\n" +
@@ -325,51 +313,52 @@ const file_zitadel_users_v1_events_proto_rawDesc = "" +
 	"\tlast_name\x18\x03 \x01(\tR\blastName\x12!\n" +
 	"\fdisplay_name\x18\x04 \x01(\tR\vdisplayName\x12\x14\n" +
 	"\x05email\x18\x05 \x01(\tR\x05email\x12-\n" +
-	"\x12preferred_language\x18\x06 \x01(\tR\x11preferredLanguage\x120\n" +
-	"\x06gender\x18\a \x01(\x0e2\x18.zitadel.users.v1.GenderR\x06gender\x12 \n" +
+	"\x12preferred_language\x18\x06 \x01(\tR\x11preferredLanguage\x12(\n" +
+	"\x06gender\x18\a \x01(\x0e2\x10.users.v1.GenderR\x06gender\x12 \n" +
 	"\tnick_name\x18\b \x01(\tH\x00R\bnickName\x88\x01\x01B\f\n" +
 	"\n" +
-	"_nick_name\"\xd2\x02\n" +
+	"_nick_name\"\xca\x02\n" +
 	"\x17UserHumanProfileChanged\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\x01 \x01(\tR\tfirstName\x12\x1b\n" +
 	"\tlast_name\x18\x02 \x01(\tR\blastName\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12-\n" +
-	"\x12preferred_language\x18\x04 \x01(\tR\x11preferredLanguage\x120\n" +
-	"\x06gender\x18\x05 \x01(\x0e2\x18.zitadel.users.v1.GenderR\x06gender\x12 \n" +
+	"\x12preferred_language\x18\x04 \x01(\tR\x11preferredLanguage\x12(\n" +
+	"\x06gender\x18\x05 \x01(\x0e2\x10.users.v1.GenderR\x06gender\x12 \n" +
 	"\tnick_name\x18\x06 \x01(\tH\x00R\bnickName\x88\x01\x01\x12A\n" +
 	"\x0eupdated_fields\x18\x0f \x01(\v2\x1a.google.protobuf.FieldMaskR\rupdatedFieldsB\f\n" +
 	"\n" +
 	"_nick_nameJ\x04\b\a\x10\x0f\"-\n" +
 	"\x15UserHumanEmailChanged\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"\x18\n" +
-	"\x16UserHumanEmailVerifiedb\x06proto3"
+	"\x16UserHumanEmailVerifiedB\xa5\x01\n" +
+	"\fcom.users.v1B\vEventsProtoP\x01ZGgithub.com/medincident/medincident-zitadel-actions/pkg/users/v1;usersv1\xa2\x02\x03UXX\xaa\x02\bUsers.V1\xca\x02\bUsers\\V1\xe2\x02\x14Users\\V1\\GPBMetadata\xea\x02\tUsers::V1b\x06proto3"
 
 var (
-	file_zitadel_users_v1_events_proto_rawDescOnce sync.Once
-	file_zitadel_users_v1_events_proto_rawDescData []byte
+	file_users_v1_events_proto_rawDescOnce sync.Once
+	file_users_v1_events_proto_rawDescData []byte
 )
 
-func file_zitadel_users_v1_events_proto_rawDescGZIP() []byte {
-	file_zitadel_users_v1_events_proto_rawDescOnce.Do(func() {
-		file_zitadel_users_v1_events_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_zitadel_users_v1_events_proto_rawDesc), len(file_zitadel_users_v1_events_proto_rawDesc)))
+func file_users_v1_events_proto_rawDescGZIP() []byte {
+	file_users_v1_events_proto_rawDescOnce.Do(func() {
+		file_users_v1_events_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_users_v1_events_proto_rawDesc), len(file_users_v1_events_proto_rawDesc)))
 	})
-	return file_zitadel_users_v1_events_proto_rawDescData
+	return file_users_v1_events_proto_rawDescData
 }
 
-var file_zitadel_users_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_zitadel_users_v1_events_proto_goTypes = []any{
-	(*UserHumanAdded)(nil),          // 0: zitadel.users.v1.UserHumanAdded
-	(*UserHumanProfileChanged)(nil), // 1: zitadel.users.v1.UserHumanProfileChanged
-	(*UserHumanEmailChanged)(nil),   // 2: zitadel.users.v1.UserHumanEmailChanged
-	(*UserHumanEmailVerified)(nil),  // 3: zitadel.users.v1.UserHumanEmailVerified
-	(Gender)(0),                     // 4: zitadel.users.v1.Gender
+var file_users_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_users_v1_events_proto_goTypes = []any{
+	(*UserHumanAdded)(nil),          // 0: users.v1.UserHumanAdded
+	(*UserHumanProfileChanged)(nil), // 1: users.v1.UserHumanProfileChanged
+	(*UserHumanEmailChanged)(nil),   // 2: users.v1.UserHumanEmailChanged
+	(*UserHumanEmailVerified)(nil),  // 3: users.v1.UserHumanEmailVerified
+	(Gender)(0),                     // 4: users.v1.Gender
 	(*fieldmaskpb.FieldMask)(nil),   // 5: google.protobuf.FieldMask
 }
-var file_zitadel_users_v1_events_proto_depIdxs = []int32{
-	4, // 0: zitadel.users.v1.UserHumanAdded.gender:type_name -> zitadel.users.v1.Gender
-	4, // 1: zitadel.users.v1.UserHumanProfileChanged.gender:type_name -> zitadel.users.v1.Gender
-	5, // 2: zitadel.users.v1.UserHumanProfileChanged.updated_fields:type_name -> google.protobuf.FieldMask
+var file_users_v1_events_proto_depIdxs = []int32{
+	4, // 0: users.v1.UserHumanAdded.gender:type_name -> users.v1.Gender
+	4, // 1: users.v1.UserHumanProfileChanged.gender:type_name -> users.v1.Gender
+	5, // 2: users.v1.UserHumanProfileChanged.updated_fields:type_name -> google.protobuf.FieldMask
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -377,29 +366,29 @@ var file_zitadel_users_v1_events_proto_depIdxs = []int32{
 	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_zitadel_users_v1_events_proto_init() }
-func file_zitadel_users_v1_events_proto_init() {
-	if File_zitadel_users_v1_events_proto != nil {
+func init() { file_users_v1_events_proto_init() }
+func file_users_v1_events_proto_init() {
+	if File_users_v1_events_proto != nil {
 		return
 	}
-	file_zitadel_users_v1_types_proto_init()
-	file_zitadel_users_v1_events_proto_msgTypes[0].OneofWrappers = []any{}
-	file_zitadel_users_v1_events_proto_msgTypes[1].OneofWrappers = []any{}
+	file_users_v1_types_proto_init()
+	file_users_v1_events_proto_msgTypes[0].OneofWrappers = []any{}
+	file_users_v1_events_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zitadel_users_v1_events_proto_rawDesc), len(file_zitadel_users_v1_events_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_users_v1_events_proto_rawDesc), len(file_users_v1_events_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_zitadel_users_v1_events_proto_goTypes,
-		DependencyIndexes: file_zitadel_users_v1_events_proto_depIdxs,
-		MessageInfos:      file_zitadel_users_v1_events_proto_msgTypes,
+		GoTypes:           file_users_v1_events_proto_goTypes,
+		DependencyIndexes: file_users_v1_events_proto_depIdxs,
+		MessageInfos:      file_users_v1_events_proto_msgTypes,
 	}.Build()
-	File_zitadel_users_v1_events_proto = out.File
-	file_zitadel_users_v1_events_proto_goTypes = nil
-	file_zitadel_users_v1_events_proto_depIdxs = nil
+	File_users_v1_events_proto = out.File
+	file_users_v1_events_proto_goTypes = nil
+	file_users_v1_events_proto_depIdxs = nil
 }

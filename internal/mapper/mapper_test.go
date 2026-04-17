@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
-	usersv1 "github.com/medincident/medincident-zitadel-actions/gen/zitadel/users/v1"
 	"github.com/medincident/medincident-zitadel-actions/internal/mapper"
 	"github.com/medincident/medincident-zitadel-actions/internal/zitadel"
+	usersv1 "github.com/medincident/medincident-zitadel-actions/pkg/users/v1"
 )
 
 var testCreatedAt = time.Date(2026, 4, 11, 10, 0, 0, 0, time.UTC)

@@ -10,7 +10,7 @@ import (
 	"github.com/medincident/medincident-zitadel-actions/internal/publish"
 )
 
-func ProvideEventHandler(injector do.Injector) (*handler.EventHandler, error) {
+func provideEventHandler(injector do.Injector) (*handler.EventHandler, error) {
 	logger, err := do.Invoke[*zerolog.Logger](injector)
 	if err != nil {
 		return nil, err
