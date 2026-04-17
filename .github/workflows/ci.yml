@@ -37,6 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
@@ -45,6 +47,7 @@ jobs:
           version: 3.x
       - run: task proto:fmt:check
       - run: task proto:lint
+      - run: task proto:breaking
       - run: task gen:check
       - run: task fmt:check
       - run: task lint
