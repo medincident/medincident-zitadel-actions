@@ -3,30 +3,9 @@ name: CI
 on:
   push:
     branches: [main]
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
-      - "**.proto"
-      - "buf.gen.yaml"
-      - "buf.gen.docs.yaml"
-      - "api/proto/buf.yaml"
-      - "Taskfile.yml"
-      - "Makefile"
-      - ".github/workflows/ci.yml"
+    tags: ["v*"]
   pull_request:
     branches: [main]
-    paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
-      - "**.proto"
-      - "buf.gen.yaml"
-      - "buf.gen.docs.yaml"
-      - "api/proto/buf.yaml"
-      - "Taskfile.yml"
-      - "Makefile"
-      - ".github/workflows/ci.yml"
 
 permissions:
   contents: read
